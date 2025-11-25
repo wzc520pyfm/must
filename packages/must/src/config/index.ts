@@ -37,9 +37,9 @@ export class ConfigManager {
     
     if (configFile && existsSync(configFile)) {
       try {
-        // Handle TypeScript config files
-        if (configFile.endsWith('.ts')) {
-          return this.loadTsConfig(configFile);
+        // Handle JavaScript/TypeScript config files
+        if (configFile.endsWith('.js') || configFile.endsWith('.ts')) {
+          return this.loadModuleConfig(configFile);
         }
         
         // Handle JSON config files
@@ -53,29 +53,37 @@ export class ConfigManager {
     return DEFAULT_CONFIG as I18nConfig;
   }
 
-  private loadTsConfig(filePath: string): I18nConfig {
+  private loadModuleConfig(filePath: string): I18nConfig {
     try {
-      // Use dynamic import to load TypeScript config
-      // This requires the file to be transpiled first or use tsx
+      // For .ts files, try to use ts-node/register if available
+      if (filePath.endsWith('.ts')) {
+        try {
+          require('ts-node/register');
+        } catch {
+          // ts-node not available, try to require directly
+        }
+      }
+      
+      // Use require to load the module
       const absolutePath = require.resolve(filePath, { paths: [process.cwd()] });
       delete require.cache[absolutePath];
       const config = require(absolutePath);
       const userConfig = config.default || config;
       return { ...DEFAULT_CONFIG, ...userConfig } as I18nConfig;
     } catch (error) {
-      console.warn(`Failed to load TypeScript config:`, error);
+      console.warn(`Failed to load module config:`, error);
       return DEFAULT_CONFIG as I18nConfig;
     }
   }
 
   private findConfigFile(): string | null {
     const possibleNames = [
-      'must.config.ts',
-      'must.config.js',
+      'must.config.js',         // 优先 JS 文件（更稳定）
       'must.config.json',
-      'i18n.config.ts',
+      'must.config.ts',
       'i18n.config.js',
       'i18n.config.json',
+      'i18n.config.ts',
       '.i18nrc.json'
     ];
 

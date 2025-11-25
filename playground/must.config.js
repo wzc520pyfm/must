@@ -1,6 +1,7 @@
-import { I18nConfig } from 'must';
+// @ts-check
 
-const config: I18nConfig = {
+/** @type {import('must').I18nConfig} */
+const config = {
   sourceLanguage: 'en',
   targetLanguages: ['zh-CN', 'ja'],
   translationProvider: 'google',
@@ -15,4 +16,4 @@ const config: I18nConfig = {
   ]
 };
 
-export default config;
+module.exports = config;
