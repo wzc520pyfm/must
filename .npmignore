@@ -1,0 +1,30 @@
+# Ignore source files
+src/
+examples/
+*.ts
+!*.d.ts
+
+# Ignore config files
+tsconfig.json
+.eslintrc.js
+jest.config.js
+
+# Ignore development files
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+*.map
+
+# Ignore test files
+**/*.test.*
+**/*.spec.*
+__tests__/
+coverage/
+
+# Keep only dist folder and essential files
+!dist/**/*
+!README.md
+!LICENSE
+!package.json

@@ -9,9 +9,28 @@ import inquirer from 'inquirer';
 const program = new Command();
 
 program
-  .name('auto-i18n')
+  .name('must')
   .description('Automated internationalization tool for extracting and translating text')
   .version('1.0.0');
+
+// Default action when no command is specified
+program
+  .action(async () => {
+    try {
+      const spinner = ora('Initializing...').start();
+      
+      const configManager = new ConfigManager();
+      const config = configManager.getConfig();
+      
+      const autoI18n = new AutoI18n(config);
+      await autoI18n.run();
+      
+      spinner.succeed('Process completed successfully!');
+    } catch (error) {
+      console.error(chalk.red('Process failed:'), error);
+      process.exit(1);
+    }
+  });
 
 // Extract command
 program
