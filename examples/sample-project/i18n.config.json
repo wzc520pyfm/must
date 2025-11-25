@@ -1,0 +1,20 @@
+{
+  "sourceLanguage": "en",
+  "targetLanguages": ["zh-CN", "ja", "ko"],
+  "translationProvider": "google",
+  "outputDir": "i18n/strings",
+  "inputPatterns": [
+    "src/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "index.html"
+  ],
+  "excludePatterns": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
+}
+

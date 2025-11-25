@@ -1,0 +1,418 @@
+{
+  "summary": {
+    "totalFiles": 5,
+    "totalTexts": 57,
+    "uniqueTexts": 51
+  },
+  "byFile": {
+    "src/App.tsx": [
+      {
+        "text": "react",
+        "file": "src/App.tsx",
+        "line": 1,
+        "column": 18,
+        "type": "string"
+      },
+      {
+        "text": "./components/Button",
+        "file": "src/App.tsx",
+        "line": 2,
+        "column": 23,
+        "type": "string"
+      },
+      {
+        "text": "./components/Header",
+        "file": "src/App.tsx",
+        "line": 3,
+        "column": 23,
+        "type": "string"
+      },
+      {
+        "text": "Button clicked!",
+        "file": "src/App.tsx",
+        "line": 7,
+        "column": 10,
+        "type": "string"
+      },
+      {
+        "text": "app",
+        "file": "src/App.tsx",
+        "line": 11,
+        "column": 19,
+        "type": "string"
+      },
+      {
+        "text": "Welcome to our application",
+        "file": "src/App.tsx",
+        "line": 12,
+        "column": 20,
+        "type": "string"
+      },
+      {
+        "text": "Hello World",
+        "file": "src/App.tsx",
+        "line": 14,
+        "column": 12,
+        "type": "jsx"
+      },
+      {
+        "text": "This is a sample application for testing the auto i18n tool.",
+        "file": "src/App.tsx",
+        "line": 15,
+        "column": 11,
+        "type": "jsx"
+      },
+      {
+        "text": "Click me",
+        "file": "src/App.tsx",
+        "line": 16,
+        "column": 38,
+        "type": "jsx"
+      },
+      {
+        "text": "info",
+        "file": "src/App.tsx",
+        "line": 19,
+        "column": 23,
+        "type": "string"
+      },
+      {
+        "text": "Please select your preferred language:",
+        "file": "src/App.tsx",
+        "line": 20,
+        "column": 13,
+        "type": "jsx"
+      },
+      {
+        "text": "English",
+        "file": "src/App.tsx",
+        "line": 22,
+        "column": 31,
+        "type": "jsx"
+      },
+      {
+        "text": "zh-CN",
+        "file": "src/App.tsx",
+        "line": 23,
+        "column": 26,
+        "type": "string"
+      },
+      {
+        "text": "中文",
+        "file": "src/App.tsx",
+        "line": 23,
+        "column": 34,
+        "type": "jsx"
+      },
+      {
+        "text": "日本語",
+        "file": "src/App.tsx",
+        "line": 24,
+        "column": 31,
+        "type": "jsx"
+      }
+    ],
+    "src/components/Header.tsx": [
+      {
+        "text": "react",
+        "file": "src/components/Header.tsx",
+        "line": 1,
+        "column": 18,
+        "type": "string"
+      },
+      {
+        "text": "header",
+        "file": "src/components/Header.tsx",
+        "line": 9,
+        "column": 22,
+        "type": "string"
+      },
+      {
+        "text": "/home",
+        "file": "src/components/Header.tsx",
+        "line": 12,
+        "column": 16,
+        "type": "string"
+      },
+      {
+        "text": "Home",
+        "file": "src/components/Header.tsx",
+        "line": 12,
+        "column": 24,
+        "type": "jsx"
+      },
+      {
+        "text": "/about",
+        "file": "src/components/Header.tsx",
+        "line": 13,
+        "column": 16,
+        "type": "string"
+      },
+      {
+        "text": "About Us",
+        "file": "src/components/Header.tsx",
+        "line": 13,
+        "column": 25,
+        "type": "jsx"
+      },
+      {
+        "text": "/contact",
+        "file": "src/components/Header.tsx",
+        "line": 14,
+        "column": 16,
+        "type": "string"
+      },
+      {
+        "text": "Contact",
+        "file": "src/components/Header.tsx",
+        "line": 14,
+        "column": 27,
+        "type": "jsx"
+      }
+    ],
+    "src/components/Button.tsx": [
+      {
+        "text": "react",
+        "file": "src/components/Button.tsx",
+        "line": 1,
+        "column": 18,
+        "type": "string"
+      },
+      {
+        "text": "primary",
+        "file": "src/components/Button.tsx",
+        "line": 7,
+        "column": 12,
+        "type": "string"
+      },
+      {
+        "text": "secondary",
+        "file": "src/components/Button.tsx",
+        "line": 7,
+        "column": 24,
+        "type": "string"
+      },
+      {
+        "text": "primary",
+        "file": "src/components/Button.tsx",
+        "line": 14,
+        "column": 12,
+        "type": "string"
+      },
+      {
+        "text": "btn btn-",
+        "file": "src/components/Button.tsx",
+        "line": 18,
+        "column": 18,
+        "type": "template"
+      },
+      {
+        "text": "This button is disabled",
+        "file": "src/components/Button.tsx",
+        "line": 21,
+        "column": 24,
+        "type": "string"
+      },
+      {
+        "text": "Click to perform action",
+        "file": "src/components/Button.tsx",
+        "line": 21,
+        "column": 52,
+        "type": "string"
+      }
+    ],
+    "src/components/Modal.vue": [
+      {
+        "text": "vue",
+        "file": "src/components/Modal.vue",
+        "line": 2,
+        "column": 32,
+        "type": "vue"
+      },
+      {
+        "text": "Modal",
+        "file": "src/components/Modal.vue",
+        "line": 5,
+        "column": 8,
+        "type": "vue"
+      },
+      {
+        "text": "Modal Title",
+        "file": "src/components/Modal.vue",
+        "line": 13,
+        "column": 15,
+        "type": "vue"
+      },
+      {
+        "text": "Modal content goes here",
+        "file": "src/components/Modal.vue",
+        "line": 17,
+        "column": 15,
+        "type": "vue"
+      },
+      {
+        "text": "close",
+        "file": "src/components/Modal.vue",
+        "line": 20,
+        "column": 10,
+        "type": "vue"
+      },
+      {
+        "text": "confirm",
+        "file": "src/components/Modal.vue",
+        "line": 20,
+        "column": 19,
+        "type": "vue"
+      },
+      {
+        "text": "cancel",
+        "file": "src/components/Modal.vue",
+        "line": 20,
+        "column": 30,
+        "type": "vue"
+      },
+      {
+        "text": "close",
+        "file": "src/components/Modal.vue",
+        "line": 23,
+        "column": 17,
+        "type": "vue"
+      },
+      {
+        "text": "confirm",
+        "file": "src/components/Modal.vue",
+        "line": 26,
+        "column": 17,
+        "type": "vue"
+      },
+      {
+        "text": "cancel",
+        "file": "src/components/Modal.vue",
+        "line": 29,
+        "column": 17,
+        "type": "vue"
+      },
+      {
+        "text": "Cancel",
+        "file": "src/components/Modal.vue",
+        "line": 16,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Confirm",
+        "file": "src/components/Modal.vue",
+        "line": 19,
+        "column": 0,
+        "type": "html"
+      }
+    ],
+    "index.html": [
+      {
+        "text": "Welcome to Our Amazing Product",
+        "file": "index.html",
+        "line": 58,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Discover the future of web development with our cutting-edge tools and solutions.",
+        "file": "index.html",
+        "line": 59,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Fast Performance",
+        "file": "index.html",
+        "line": 64,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Built with modern technologies for optimal speed and efficiency.",
+        "file": "index.html",
+        "line": 65,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Easy Integration",
+        "file": "index.html",
+        "line": 68,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Simple setup process that gets you up and running in minutes.",
+        "file": "index.html",
+        "line": 69,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "24/7 Support",
+        "file": "index.html",
+        "line": 72,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Our dedicated team is here to help you every step of the way.",
+        "file": "index.html",
+        "line": 73,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Ready to Get Started?",
+        "file": "index.html",
+        "line": 78,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Join thousands of developers who trust our platform.",
+        "file": "index.html",
+        "line": 79,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Sign Up Now",
+        "file": "index.html",
+        "line": 80,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "View Demo",
+        "file": "index.html",
+        "line": 81,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "© 2024 Sample Company. All rights reserved.",
+        "file": "index.html",
+        "line": 1,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "Contact us at",
+        "file": "index.html",
+        "line": 86,
+        "column": 0,
+        "type": "html"
+      },
+      {
+        "text": "support@example.com",
+        "file": "index.html",
+        "line": 86,
+        "column": 0,
+        "type": "html"
+      }
+    ]
+  }
+}
