@@ -19,6 +19,17 @@ coverage/
 packages/*/dist/
 playground/dist/
 
+# Build info files
+*.tsbuildinfo
+
+# Compiled files in source directories (should not happen, but just in case)
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts.map
+!packages/*/src/**/*.spec.js
+!packages/*/src/**/*.test.js
+
 # Generated i18n files (for testing)
 playground/src/i18n/
 
