@@ -15,3 +15,12 @@ coverage/
 *.swo
 *~
 
+# Build outputs
+packages/*/dist/
+playground/dist/
+
+# Generated i18n files (for testing)
+playground/src/i18n/
+
+# pnpm
+.pnpm-debug.log*
