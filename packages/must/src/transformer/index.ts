@@ -105,7 +105,7 @@ export class CodeTransformer {
         sourceType: 'module',
         plugins: ['typescript', 'jsx']
       });
-      
+
       // 获取表达式
       const stmt = ast.program.body[0];
       if (t.isExpressionStatement(stmt)) {
@@ -190,14 +190,14 @@ export class CodeTransformer {
 
       // 检测是否为静态文件
       const isStatic = this.isStaticFile(ast);
-      
+
       let modified = false;
       const translations = new Map<string, string>();
       const importConfig = this.parseImportConfig();
-      
+
       // 根据文件类型选择不同的包裹配置
       // 静态文件使用 staticFileWrapper，React 组件使用 componentWrapper 或 wrapperFunction
-      const wrapperConfig: string | WrapperGenerator = isStatic 
+      const wrapperConfig: string | WrapperGenerator = isStatic
         ? (importConfig.staticFileWrapper || 'i18n.t')
         : (importConfig.componentWrapper || this.config.transform.wrapperFunction || 't');
 
@@ -222,10 +222,10 @@ export class CodeTransformer {
         ImportDeclaration: (nodePath: any) => {
           const importSource = nodePath.node.source.value;
           // 检查是否已导入 i18n 相关模块
-          if (importSource === 'react-i18next' || 
-              importSource === 'i18next' ||
-              importSource.includes('i18n') ||
-              importSource.includes('/i18n')) {
+          if (importSource === 'react-i18next' ||
+            importSource === 'i18next' ||
+            importSource.includes('i18n') ||
+            importSource.includes('/i18n')) {
             hasI18nImport = true;
           }
         },
@@ -279,7 +279,7 @@ export class CodeTransformer {
           if (result) {
             const { mergedText, expressions } = result;
             const key = this.keyMap.get(mergedText);
-            
+
             if (key) {
               processedJSXElements.add(nodePath.node);
               translations.set(mergedText, key);
@@ -288,13 +288,13 @@ export class CodeTransformer {
               // 创建带插值的 t() 调用
               const interpolationObj = expressions.length > 0
                 ? t.objectExpression(
-                    expressions.map((expr: any, index: number) =>
-                      t.objectProperty(
-                        t.identifier(String(index)),
-                        t.cloneNode(expr, true)
-                      )
+                  expressions.map((expr: any, index: number) =>
+                    t.objectProperty(
+                      t.identifier(String(index)),
+                      t.cloneNode(expr, true)
                     )
                   )
+                )
                 : undefined;
 
               const callExpression = this.createTCallWithComment(
@@ -367,20 +367,20 @@ export class CodeTransformer {
           this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
           // 构建 t(key /* 原文 */, { 0: expr0, 1: expr1, ... })
-          const interpolationObj = expressions.length > 0 
+          const interpolationObj = expressions.length > 0
             ? t.objectExpression(
-                expressions.map((expr: any, index: number) =>
-                  t.objectProperty(
-                    t.identifier(String(index)),
-                    expr
-                  )
+              expressions.map((expr: any, index: number) =>
+                t.objectProperty(
+                  t.identifier(String(index)),
+                  expr
                 )
               )
+            )
             : undefined;
 
           const callExpression = this.createTCallWithComment(
-            wrapperConfig, 
-            key, 
+            wrapperConfig,
+            key,
             fullText.trim(),
             interpolationObj,
             expressions
@@ -444,13 +444,13 @@ export class CodeTransformer {
           // 构建 t(key /* 原文 */, { 0: expr0, 1: expr1, ... })
           const interpolationObj = expressions.length > 0
             ? t.objectExpression(
-                expressions.map((expr: any, index: number) =>
-                  t.objectProperty(
-                    t.identifier(String(index)),
-                    expr
-                  )
+              expressions.map((expr: any, index: number) =>
+                t.objectProperty(
+                  t.identifier(String(index)),
+                  expr
                 )
               )
+            )
             : undefined;
 
           const callExpression = this.createTCallWithComment(
@@ -571,7 +571,7 @@ export class CodeTransformer {
       if (astExpr) {
         return astExpr;
       }
-      
+
       // 如果解析失败，回退到简单模式
       console.warn('Failed to parse wrapper, falling back to simple mode');
     }
@@ -579,14 +579,14 @@ export class CodeTransformer {
     // 简单函数格式: t 或 i18n.t
     const wrapperFunction = typeof wrapperConfig === 'string' ? wrapperConfig : 't';
     const keyLiteral = t.stringLiteral(key);
-    
+
     // 添加尾部注释（原文）
     const maxCommentLength = 30;
     let commentText = originalText.replace(/\n/g, ' ').trim();
     if (commentText.length > maxCommentLength) {
       commentText = commentText.substring(0, maxCommentLength) + '...';
     }
-    
+
     t.addComment(keyLiteral, 'trailing', ` ${commentText} `, false);
 
     // 构建调用表达式的 callee
@@ -775,12 +775,19 @@ export class CodeTransformer {
         // 尝试加载项目的 prettier 配置
         const prettierConfig = await prettier.resolveConfig(filePath) || {};
 
+        // 根据文件扩展名选择正确的 parser
+        const ext = filePath.split('.').pop()?.toLowerCase();
+        let parser = 'babel';
+        if (ext === 'ts' || ext === 'tsx') {
+          parser = 'typescript';
+        } else if (ext === 'jsx') {
+          parser = 'babel';
+        }
+
         return prettier.format(code, {
           ...prettierConfig,
           filepath: filePath,
-          parser: filePath.endsWith('.tsx') || filePath.endsWith('.jsx')
-            ? 'typescript'
-            : 'babel'
+          parser
         });
       }
     } catch (error) {
@@ -881,10 +888,10 @@ export class CodeTransformer {
     if (!children || children.length <= 1) return null;
 
     // 检查是否有混合内容（文本 + 表达式）
-    const hasText = children.some((child: any) => 
+    const hasText = children.some((child: any) =>
       t.isJSXText(child) && /[\u4e00-\u9fa5]/.test(child.value)
     );
-    const hasExpression = children.some((child: any) => 
+    const hasExpression = children.some((child: any) =>
       t.isJSXExpressionContainer(child) && !t.isJSXEmptyExpression(child.expression)
     );
 
@@ -904,7 +911,7 @@ export class CodeTransformer {
         }
       } else if (t.isJSXExpressionContainer(child) && !t.isJSXEmptyExpression(child.expression)) {
         const expr = child.expression;
-        
+
         // 如果表达式已经是 t() 调用，跳过合并
         if (t.isCallExpression(expr)) {
           const callee = expr.callee;
@@ -912,7 +919,7 @@ export class CodeTransformer {
             return null; // 已经被翻译过
           }
         }
-        
+
         mergedText += `{{${expressionIndex}}}`;
         expressions.push(expr);
         expressionIndex++;
@@ -920,7 +927,7 @@ export class CodeTransformer {
     }
 
     const trimmedText = mergedText.trim();
-    
+
     // 只有当包含中文且在 keyMap 中有对应的 key 时才返回
     if (trimmedText && /[\u4e00-\u9fa5]/.test(trimmedText) && this.keyMap.has(trimmedText)) {
       return { mergedText: trimmedText, expressions };
