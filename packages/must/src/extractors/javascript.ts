@@ -2,10 +2,13 @@ import { readFileSync } from 'fs';
 import { parse } from '@babel/parser';
 const traverse = require('@babel/traverse').default;
 import * as t from '@babel/types';
-import { BaseExtractor } from './base';
+import { BaseExtractor, ExtractorConfig } from './base';
 import { ExtractedText } from '@must/types';
 
 export class JavaScriptExtractor extends BaseExtractor {
+  constructor(config: ExtractorConfig = {}) {
+    super(config);
+  }
   async extract(filePath: string): Promise<ExtractedText[]> {
     const extractedTexts: ExtractedText[] = [];
 

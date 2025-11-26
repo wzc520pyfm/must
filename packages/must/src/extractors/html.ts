@@ -1,9 +1,12 @@
 import { readFileSync } from 'fs';
 import { JSDOM } from 'jsdom';
-import { BaseExtractor } from './base';
+import { BaseExtractor, ExtractorConfig } from './base';
 import { ExtractedText } from '@must/types';
 
 export class HTMLExtractor extends BaseExtractor {
+  constructor(config: ExtractorConfig = {}) {
+    super(config);
+  }
   async extract(filePath: string): Promise<ExtractedText[]> {
     const extractedTexts: ExtractedText[] = [];
     

@@ -1,6 +1,27 @@
+/**
+ * 导入配置 - 支持全局导入和上下文注入
+ */
+export interface ImportConfig {
+  /**
+   * 全局导入语句，会添加到文件顶部的 import 区域
+   * 例如: "import { useTranslation } from 'react-i18next';"
+   */
+  global?: string;
+  /**
+   * 上下文注入语句，会添加到 React 组件/Hook 函数体的开头
+   * 例如: "const { t } = useTranslation();"
+   */
+  contextInjection?: string;
+}
+
 export interface TransformConfig {
   enabled?: boolean;  // 是否启用自动转换
-  importStatement?: string;  // 自定义 import 语句
+  /**
+   * 导入配置，支持两种格式：
+   * 1. 字符串格式（向后兼容）: "import { useTranslation } from 'react-i18next';"
+   * 2. 对象格式（推荐）: { global: "import ...", contextInjection: "const { t } = ..." }
+   */
+  importStatement?: string | ImportConfig;
   wrapperFunction?: string;  // 包裹函数名，默认 't'
   formatCode?: boolean;  // 是否格式化代码，默认 true
   // 自定义转换函数

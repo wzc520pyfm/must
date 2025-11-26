@@ -17,7 +17,10 @@ export class AutoI18n {
   constructor(config?: I18nConfig) {
     const configManager = new ConfigManager();
     this.config = config || configManager.getConfig();
-    this.extractor = new TextExtractor();
+    // 传递源语言给提取器，用于过滤文本
+    this.extractor = new TextExtractor({
+      sourceLanguage: this.config.sourceLanguage
+    });
     this.translator = new TranslationManager(this.config);
     
     // 加载已存在的 keys

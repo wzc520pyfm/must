@@ -25,7 +25,13 @@ const config = {
   // 代码转换配置
   transform: {
     enabled: true,  // 开启自动转换
-    importStatement: "import { useTranslation } from 'react-i18next';",
+    // 导入配置：支持全局导入和上下文注入
+    importStatement: {
+      // 全局导入语句，添加到文件顶部
+      global: "import { useTranslation } from 'react-i18next';",
+      // 上下文注入语句，添加到 React 组件/Hook 函数体开头
+      contextInjection: "const { t } = useTranslation();"
+    },
     wrapperFunction: 't',
     formatCode: true,  // 格式化代码
   }

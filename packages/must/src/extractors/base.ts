@@ -1,17 +1,24 @@
 import { ExtractedText, ExtractorOptions } from '@must/types';
 
+export interface ExtractorConfig {
+  options?: ExtractorOptions;
+  sourceLanguage?: string;  // 源语言，用于过滤文本
+}
+
 export abstract class BaseExtractor {
   protected options: ExtractorOptions;
+  protected sourceLanguage: string;
 
-  constructor(options: ExtractorOptions = {}) {
+  constructor(config: ExtractorConfig = {}) {
     this.options = {
       includeComments: false,
       includeTemplateLiterals: true,
       includeJSX: true,
       includeVue: true,
       includeHTML: true,
-      ...options
+      ...config.options
     };
+    this.sourceLanguage = config.sourceLanguage || 'zh-CN';
   }
 
   abstract extract(filePath: string): Promise<ExtractedText[]>;
@@ -47,35 +54,33 @@ export abstract class BaseExtractor {
     if (/^(https?:\/\/|\/|\.\/|\.\.\/|~\/)/.test(text)) return false;
     if (/^[@\.][\w\-\/]+/.test(text)) return false; // npm packages, relative paths
     
-    // Filter out common code keywords and technical terms
-    const technicalKeywords = [
-      'react', 'vue', 'angular', 'tsx', 'jsx', 'ts', 'js',
-      'node_modules', 'package', 'import', 'export', 'const', 'let', 'var',
-      'function', 'class', 'interface', 'type', 'enum', 'div', 'span',
-      'button', 'input', 'form', 'header', 'footer', 'nav', 'main',
-      'src', 'dist', 'build', 'app', 'btn', 'primary', 'secondary',
-      'lg', 'sm', 'md', 'xl', 'px', 'py', 'mt', 'mb', 'ml', 'mr'
-    ];
-    
-    if (technicalKeywords.includes(textWithoutPlaceholders.toLowerCase().trim())) return false;
-    
-    // Filter out CSS class names and IDs (but not if it contains Chinese or placeholders)
-    if (/^[a-z\-_]+$/.test(textWithoutPlaceholders) && textWithoutPlaceholders.length < 15 && !textWithoutPlaceholders.includes(' ')) return false;
-    
     // Filter out file extensions
     if (/^\.[a-z]{2,4}$/i.test(text)) return false;
     
     // Filter out hex colors
     if (/^#[0-9a-f]{3,8}$/i.test(text)) return false;
     
-    // Must contain at least one Chinese character or meaningful letter sequence
-    // 包含中文字符的文本优先通过
-    if (/[\u4e00-\u9fa5]/.test(textWithoutPlaceholders)) return true;
+    // 根据源语言决定提取策略
+    // 目前只支持中文作为源语言，只提取包含中文的文本
+    // 未来可以扩展支持英文等其他语言
+    if (this.sourceLanguage.startsWith('zh')) {
+      // 中文源语言：必须包含中文字符
+      return /[\u4e00-\u9fa5]/.test(textWithoutPlaceholders);
+    }
     
-    // 对于英文文本，必须包含字母且长度足够
-    if (!/[a-zA-Z]/.test(textWithoutPlaceholders)) return false;
+    // 日文源语言：必须包含日文字符（平假名、片假名、汉字）
+    if (this.sourceLanguage.startsWith('ja')) {
+      return /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fa5]/.test(textWithoutPlaceholders);
+    }
     
-    return true;
+    // 韩文源语言：必须包含韩文字符
+    if (this.sourceLanguage.startsWith('ko')) {
+      return /[\uac00-\ud7af\u1100-\u11ff]/.test(textWithoutPlaceholders);
+    }
+    
+    // 其他语言（如英文）：暂不支持，返回 false
+    // 英文文案和代码本身都是英文，不好区分，未来再扩展
+    return false;
   }
 }
 

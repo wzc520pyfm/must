@@ -1,19 +1,29 @@
-import { BaseExtractor } from './base';
+import { BaseExtractor, ExtractorConfig } from './base';
 import { JavaScriptExtractor } from './javascript';
 import { VueExtractor } from './vue';
 import { HTMLExtractor } from './html';
 import { ExtractedText, ExtractorOptions } from '@must/types';
 
+export interface TextExtractorConfig {
+  options?: ExtractorOptions;
+  sourceLanguage?: string;  // 源语言，用于过滤文本
+}
+
 export class TextExtractor {
   private extractors: Map<string, BaseExtractor> = new Map();
 
-  constructor(options: ExtractorOptions = {}) {
-    this.extractors.set('js', new JavaScriptExtractor(options));
-    this.extractors.set('jsx', new JavaScriptExtractor(options));
-    this.extractors.set('ts', new JavaScriptExtractor(options));
-    this.extractors.set('tsx', new JavaScriptExtractor(options));
-    this.extractors.set('vue', new VueExtractor(options));
-    this.extractors.set('html', new HTMLExtractor(options));
+  constructor(config: TextExtractorConfig = {}) {
+    const extractorConfig: ExtractorConfig = {
+      options: config.options,
+      sourceLanguage: config.sourceLanguage
+    };
+    
+    this.extractors.set('js', new JavaScriptExtractor(extractorConfig));
+    this.extractors.set('jsx', new JavaScriptExtractor(extractorConfig));
+    this.extractors.set('ts', new JavaScriptExtractor(extractorConfig));
+    this.extractors.set('tsx', new JavaScriptExtractor(extractorConfig));
+    this.extractors.set('vue', new VueExtractor(extractorConfig));
+    this.extractors.set('html', new HTMLExtractor(extractorConfig));
   }
 
   async extractFromFile(filePath: string): Promise<ExtractedText[]> {
@@ -49,5 +59,5 @@ export class TextExtractor {
 }
 
 export { BaseExtractor, JavaScriptExtractor, VueExtractor, HTMLExtractor };
-export type { ExtractedText, ExtractorOptions };
+export type { ExtractedText, ExtractorOptions, ExtractorConfig };
 

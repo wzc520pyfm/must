@@ -1,6 +1,6 @@
 import * as parser from '@babel/parser';
 import * as t from '@babel/types';
-import { I18nConfig } from '@must/types';
+import { I18nConfig, ImportConfig } from '@must/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -20,6 +20,35 @@ export class CodeTransformer {
   constructor(config: I18nConfig, keyMap: Map<string, string>) {
     this.config = config;
     this.keyMap = keyMap;
+  }
+
+  /**
+   * 解析导入配置，支持字符串和对象两种格式
+   */
+  private parseImportConfig(): ImportConfig {
+    const importStatement = this.config.transform?.importStatement;
+    
+    if (!importStatement) {
+      // 默认配置
+      return {
+        global: "import { useTranslation } from 'react-i18next';",
+        contextInjection: "const { t } = useTranslation();"
+      };
+    }
+    
+    if (typeof importStatement === 'string') {
+      // 向后兼容：字符串格式只设置全局导入
+      return {
+        global: importStatement,
+        contextInjection: "const { t } = useTranslation();"
+      };
+    }
+    
+    // 对象格式
+    return {
+      global: importStatement.global || "import { useTranslation } from 'react-i18next';",
+      contextInjection: importStatement.contextInjection || "const { t } = useTranslation();"
+    };
   }
 
   /**
@@ -46,21 +75,37 @@ export class CodeTransformer {
       let modified = false;
       const translations = new Map<string, string>();
       const wrapperFunction = this.config.transform.wrapperFunction || 't';
+      const importConfig = this.parseImportConfig();
+      
       let hasI18nImport = false;
-      let hasUseTranslation = false;
+      // 记录需要注入上下文的函数/组件
+      const functionsNeedingInjection = new Set<any>();
+      // 记录已经有上下文注入的函数
+      const functionsWithInjection = new Set<any>();
 
-      // 检查是否已有 import
+      // 第一遍：检查是否已有 import 和 useTranslation 调用
       traverse(ast, {
         ImportDeclaration: (nodePath: any) => {
           const importSource = nodePath.node.source.value;
-          if (importSource === 'react-i18next') {
+          if (importSource === 'react-i18next' || importSource === 'i18next') {
             hasI18nImport = true;
-            const specifiers = nodePath.node.specifiers;
-            for (const spec of specifiers) {
-              if (t.isImportSpecifier(spec)) {
-                const imported = spec.imported;
-                if (t.isIdentifier(imported) && imported.name === 'useTranslation') {
-                  hasUseTranslation = true;
+          }
+        },
+        // 检查是否已经有 useTranslation 调用
+        VariableDeclaration: (nodePath: any) => {
+          const declarations = nodePath.node.declarations;
+          for (const decl of declarations) {
+            if (t.isCallExpression(decl.init)) {
+              const callee = decl.init.callee;
+              if (t.isIdentifier(callee) && callee.name === 'useTranslation') {
+                // 找到包含此声明的函数
+                const funcParent = nodePath.findParent((p: any) => 
+                  t.isFunctionDeclaration(p.node) || 
+                  t.isFunctionExpression(p.node) || 
+                  t.isArrowFunctionExpression(p.node)
+                );
+                if (funcParent) {
+                  functionsWithInjection.add(funcParent.node);
                 }
               }
             }
@@ -68,7 +113,7 @@ export class CodeTransformer {
         }
       });
 
-      // 遍历并替换字符串
+      // 第二遍：遍历并替换字符串，同时记录需要注入的函数
       traverse(ast, {
         // 处理普通字符串
         StringLiteral: (nodePath: any) => {
@@ -77,6 +122,9 @@ export class CodeTransformer {
 
           if (key && this.shouldTransform(nodePath)) {
             translations.set(text, key);
+
+            // 记录包含此字符串的函数组件
+            this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
             // 使用 t(key) 替换
             const callExpression = t.callExpression(
@@ -120,6 +168,9 @@ export class CodeTransformer {
 
           translations.set(fullText.trim(), key);
 
+          // 记录包含此模板字符串的函数组件
+          this.markFunctionForInjection(nodePath, functionsNeedingInjection);
+
           // 构建 t(key, { 0: expr0, 1: expr1, ... })
           const interpolationObj = t.objectExpression(
             expressions.map((expr: any, index: number) => 
@@ -151,6 +202,9 @@ export class CodeTransformer {
           const key = this.keyMap.get(text);
           if (key) {
             translations.set(text, key);
+
+            // 记录包含此 JSX 文本的函数组件
+            this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
             // JSX 中需要用 {t(key)} 包裹
             const callExpression = t.callExpression(
@@ -191,6 +245,9 @@ export class CodeTransformer {
 
           translations.set(fullText.trim(), key);
 
+          // 记录包含此模板字符串的函数组件
+          this.markFunctionForInjection(nodePath, functionsNeedingInjection);
+
           // 构建 t(key, { 0: expr0, 1: expr1, ... })
           const interpolationObj = t.objectExpression(
             expressions.map((expr: any, index: number) => 
@@ -216,32 +273,16 @@ export class CodeTransformer {
         }
       });
 
-      // 如果修改了代码且没有导入，添加 import
-      if (modified && !hasI18nImport) {
-        const importStatement = this.config.transform.importStatement || 
-          `import { useTranslation } from 'react-i18next';`;
-        
-        // 解析 import 语句
-        const importAST = parser.parse(importStatement, {
-          sourceType: 'module'
-        });
+      // 如果修改了代码，添加必要的导入和上下文注入
+      if (modified) {
+        // 添加全局导入
+        if (!hasI18nImport && importConfig.global) {
+          this.addGlobalImport(ast, importConfig.global);
+        }
 
-        const importDeclaration = importAST.program.body[0];
-        if (t.isImportDeclaration(importDeclaration)) {
-          // 找到最后一个 import 语句的位置
-          let lastImportIndex = -1;
-          ast.program.body.forEach((node: any, index: number) => {
-            if (t.isImportDeclaration(node)) {
-              lastImportIndex = index;
-            }
-          });
-
-          // 在最后一个 import 后插入
-          if (lastImportIndex >= 0) {
-            ast.program.body.splice(lastImportIndex + 1, 0, importDeclaration);
-          } else {
-            ast.program.body.unshift(importDeclaration);
-          }
+        // 添加上下文注入（到需要的函数中）
+        if (importConfig.contextInjection) {
+          this.addContextInjections(ast, functionsNeedingInjection, functionsWithInjection, importConfig.contextInjection);
         }
       }
 
@@ -269,6 +310,127 @@ export class CodeTransformer {
     } catch (error) {
       console.warn(`Failed to transform ${filePath}:`, error);
       return { code, modified: false, translations: new Map() };
+    }
+  }
+
+  /**
+   * 标记函数需要注入上下文
+   */
+  private markFunctionForInjection(nodePath: any, functionsNeedingInjection: Set<any>) {
+    const funcParent = nodePath.findParent((p: any) => 
+      t.isFunctionDeclaration(p.node) || 
+      t.isFunctionExpression(p.node) || 
+      t.isArrowFunctionExpression(p.node)
+    );
+    
+    if (funcParent) {
+      functionsNeedingInjection.add(funcParent.node);
+    }
+  }
+
+  /**
+   * 添加全局导入语句
+   */
+  private addGlobalImport(ast: any, importStatement: string) {
+    try {
+      // 解析 import 语句
+      const importAST = parser.parse(importStatement, {
+        sourceType: 'module'
+      });
+
+      const importDeclaration = importAST.program.body[0];
+      if (t.isImportDeclaration(importDeclaration)) {
+        // 找到最后一个 import 语句的位置
+        let lastImportIndex = -1;
+        ast.program.body.forEach((node: any, index: number) => {
+          if (t.isImportDeclaration(node)) {
+            lastImportIndex = index;
+          }
+        });
+
+        // 在最后一个 import 后插入
+        if (lastImportIndex >= 0) {
+          ast.program.body.splice(lastImportIndex + 1, 0, importDeclaration);
+        } else {
+          ast.program.body.unshift(importDeclaration);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to add global import:', error);
+    }
+  }
+
+  /**
+   * 添加上下文注入到函数中
+   */
+  private addContextInjections(
+    ast: any, 
+    functionsNeedingInjection: Set<any>, 
+    functionsWithInjection: Set<any>,
+    contextInjection: string
+  ) {
+    try {
+      // 解析上下文注入语句
+      const injectionAST = parser.parse(contextInjection, {
+        sourceType: 'module'
+      });
+
+      const injectionStatement = injectionAST.program.body[0];
+      if (!injectionStatement) return;
+
+      // 遍历 AST，找到需要注入的函数并添加语句
+      traverse(ast, {
+        FunctionDeclaration: (nodePath: any) => {
+          if (functionsNeedingInjection.has(nodePath.node) && !functionsWithInjection.has(nodePath.node)) {
+            this.injectToFunctionBody(nodePath, injectionStatement);
+            functionsWithInjection.add(nodePath.node);
+          }
+        },
+        FunctionExpression: (nodePath: any) => {
+          if (functionsNeedingInjection.has(nodePath.node) && !functionsWithInjection.has(nodePath.node)) {
+            this.injectToFunctionBody(nodePath, injectionStatement);
+            functionsWithInjection.add(nodePath.node);
+          }
+        },
+        ArrowFunctionExpression: (nodePath: any) => {
+          if (functionsNeedingInjection.has(nodePath.node) && !functionsWithInjection.has(nodePath.node)) {
+            this.injectToArrowFunction(nodePath, injectionStatement);
+            functionsWithInjection.add(nodePath.node);
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to add context injection:', error);
+    }
+  }
+
+  /**
+   * 注入语句到普通函数体
+   */
+  private injectToFunctionBody(nodePath: any, injectionStatement: any) {
+    const body = nodePath.node.body;
+    if (t.isBlockStatement(body)) {
+      // 克隆注入语句以避免重复使用同一节点
+      const clonedStatement = t.cloneNode(injectionStatement, true);
+      body.body.unshift(clonedStatement);
+    }
+  }
+
+  /**
+   * 注入语句到箭头函数
+   */
+  private injectToArrowFunction(nodePath: any, injectionStatement: any) {
+    const body = nodePath.node.body;
+    
+    if (t.isBlockStatement(body)) {
+      // 已经是块语句，直接在开头插入
+      const clonedStatement = t.cloneNode(injectionStatement, true);
+      body.body.unshift(clonedStatement);
+    } else {
+      // 是表达式，需要转换为块语句
+      const clonedStatement = t.cloneNode(injectionStatement, true);
+      const returnStatement = t.returnStatement(body);
+      nodePath.node.body = t.blockStatement([clonedStatement, returnStatement]);
     }
   }
 
