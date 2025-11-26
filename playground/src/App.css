@@ -16,6 +16,35 @@
   font-size: 2.5rem;
 }
 
+/* 语言切换器样式 */
+.language-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.language-switcher button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border: 2px solid #61dafb;
+  border-radius: 20px;
+  background: transparent;
+  color: #61dafb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.language-switcher button:hover {
+  background: rgba(97, 218, 251, 0.1);
+}
+
+.language-switcher button.active {
+  background: #61dafb;
+  color: #282c34;
+  font-weight: bold;
+}
+
 .main-content {
   flex: 1;
   max-width: 1200px;

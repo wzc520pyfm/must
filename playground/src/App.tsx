@@ -1,14 +1,44 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import "./App.css";
 
 function App() {
   const [count, setCount] = useState(0);
+  const { t, i18n } = useTranslation();
+
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>欢迎使用 Must 国际化工具</h1>
-        <p>这是一个自动化的国际化解决方案，支持多语言文案提取与翻译。</p>
+        <div className="language-switcher">
+          <button
+            onClick={() => changeLanguage("zh-CN")}
+            className={i18n.language === "zh-CN" ? "active" : ""}
+          >
+            中文
+          </button>
+          <button
+            onClick={() => changeLanguage("en")}
+            className={i18n.language === "en" ? "active" : ""}
+          >
+            English
+          </button>
+          <button
+            onClick={() => changeLanguage("ja")}
+            className={i18n.language === "ja" ? "active" : ""}
+          >
+            日本語
+          </button>
+        </div>
+        <h1>{t("playground.App.welcomeToTheMustInternationalizationTool")}</h1>
+        <p>
+          {t(
+            "playground.App.thisIsAnAutomatedInternationalizationSolutionThatSupportsMultilingualTextExtractionAndTranslation"
+          )}
+        </p>
       </header>
 
       <main className="main-content">

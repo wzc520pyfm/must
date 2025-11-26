@@ -23,7 +23,7 @@ const config = {
   ],
   // 代码转换配置
   transform: {
-    enabled: false,  // 暂时关闭自动转换，先看 key 生成
+    enabled: true,  // 开启自动转换
     importStatement: "import { useTranslation } from 'react-i18next';",
     wrapperFunction: 't',
   }
