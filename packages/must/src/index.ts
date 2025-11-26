@@ -221,36 +221,19 @@ export class AutoI18n {
 
     ensureOutputDirectory(patchDir);
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-    const patchFileName = `patch-${timestamp}-${Date.now()}.json`;
-    const patchPath = path.join(patchDir, patchFileName);
+    // 生成与 i18n 目录相同结构的 patch 文件
+    // patches 目录下只包含本次新增的翻译
+    let newCount = 0;
+    for (const lang of [this.config.sourceLanguage, ...this.config.targetLanguages]) {
+      const langTranslations = newTranslations[lang];
+      if (langTranslations && Object.keys(langTranslations).length > 0) {
+        const patchPath = path.join(patchDir, `${lang}.json`);
+        writeI18nFile(patchDir, lang, langTranslations);
+        newCount = Object.keys(langTranslations).length;
+      }
+    }
 
-    // 构建 patch 数据
-    const patchData = {
-      timestamp: new Date().toISOString(),
-      sourceLanguage: this.config.sourceLanguage,
-      targetLanguages: this.config.targetLanguages,
-      translations: newTranslations,
-      metadata: Object.fromEntries(
-        Object.entries(sourceMap).map(([key, extracted]) => [
-          key,
-          {
-            file: extracted.file,
-            line: extracted.line,
-            column: extracted.column,
-            type: extracted.type
-          }
-        ])
-      )
-    };
-
-    fs.writeFileSync(patchPath, JSON.stringify(patchData, null, 2), 'utf-8');
-    
-    const totalNew = Object.values(newTranslations).reduce(
-      (sum, trans) => sum + Object.keys(trans).length, 
-      0
-    );
-    console.log(`📦 Generated patch file: ${patchFileName} (${totalNew / (this.config.targetLanguages.length + 1)} new translations)`);
+    console.log(`📦 Generated patch files in ${patchDir} (${newCount} new translations)`);
   }
 
   async transformSourceFiles(

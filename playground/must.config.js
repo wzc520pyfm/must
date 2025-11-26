@@ -1,4 +1,5 @@
 // @ts-check
+require('dotenv').config();
 
 /** @type {import('must').I18nConfig} */
 const config = {
@@ -6,6 +7,9 @@ const config = {
   sourceLanguage: 'zh-CN',  // 源语言改为中文
   targetLanguages: ['en', 'ja'],  // 目标语言为英文和日文
   translationProvider: 'baidu',
+  // 从环境变量读取 API 配置
+  apiKey: process.env.BAIDU_APP_ID,
+  apiSecret: process.env.BAIDU_APP_KEY,
   outputDir: 'src/i18n',
   patchDir: 'src/i18n/patches',  // patch 目录
   keyStyle: 'dot',  // 使用点分隔的 key 风格
