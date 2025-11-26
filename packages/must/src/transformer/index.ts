@@ -27,7 +27,7 @@ export class CodeTransformer {
    */
   private parseImportConfig(): ImportConfig {
     const importStatement = this.config.transform?.importStatement;
-    
+
     if (!importStatement) {
       // 默认配置
       return {
@@ -35,7 +35,7 @@ export class CodeTransformer {
         contextInjection: "const { t } = useTranslation();"
       };
     }
-    
+
     if (typeof importStatement === 'string') {
       // 向后兼容：字符串格式只设置全局导入
       return {
@@ -43,7 +43,7 @@ export class CodeTransformer {
         contextInjection: "const { t } = useTranslation();"
       };
     }
-    
+
     // 对象格式
     return {
       global: importStatement.global || "import { useTranslation } from 'react-i18next';",
@@ -76,12 +76,17 @@ export class CodeTransformer {
       const translations = new Map<string, string>();
       const wrapperFunction = this.config.transform.wrapperFunction || 't';
       const importConfig = this.parseImportConfig();
-      
+
       let hasI18nImport = false;
       // 记录需要注入上下文的函数/组件
       const functionsNeedingInjection = new Set<any>();
-      // 记录已经有上下文注入的函数
+      // 记录已经有上下文注入的函数（完整的，包含 t）
       const functionsWithInjection = new Set<any>();
+      // 记录需要更新解构的 useTranslation 调用（有 useTranslation 但缺少 t）
+      const useTranslationDeclarationsToUpdate: Array<{
+        nodePath: any;
+        funcNode: any;
+      }> = [];
 
       // 第一遍：检查是否已有 import 和 useTranslation 调用
       traverse(ast, {
@@ -99,13 +104,28 @@ export class CodeTransformer {
               const callee = decl.init.callee;
               if (t.isIdentifier(callee) && callee.name === 'useTranslation') {
                 // 找到包含此声明的函数
-                const funcParent = nodePath.findParent((p: any) => 
-                  t.isFunctionDeclaration(p.node) || 
-                  t.isFunctionExpression(p.node) || 
+                const funcParent = nodePath.findParent((p: any) =>
+                  t.isFunctionDeclaration(p.node) ||
+                  t.isFunctionExpression(p.node) ||
                   t.isArrowFunctionExpression(p.node)
                 );
+
                 if (funcParent) {
-                  functionsWithInjection.add(funcParent.node);
+                  // 检查解构中是否已经有 t
+                  const hasT = this.checkHasDestructuredProperty(decl.id, wrapperFunction);
+
+                  if (hasT) {
+                    // 已经有完整的注入
+                    functionsWithInjection.add(funcParent.node);
+                  } else {
+                    // 有 useTranslation 但缺少 t，需要更新
+                    useTranslationDeclarationsToUpdate.push({
+                      nodePath,
+                      funcNode: funcParent.node
+                    });
+                    // 标记为已有注入，避免重复添加新的 useTranslation 调用
+                    functionsWithInjection.add(funcParent.node);
+                  }
                 }
               }
             }
@@ -146,12 +166,12 @@ export class CodeTransformer {
           if (!this.shouldTransformTemplate(nodePath)) return;
 
           const { quasis, expressions } = nodePath.node;
-          
+
           // 只处理包含中文的模板字符串
-          const hasChineseText = quasis.some((quasi: any) => 
+          const hasChineseText = quasis.some((quasi: any) =>
             /[\u4e00-\u9fa5]/.test(quasi.value.raw)
           );
-          
+
           if (!hasChineseText) return;
 
           // 构建完整的模板字符串文本（用于查找 key）
@@ -173,7 +193,7 @@ export class CodeTransformer {
 
           // 构建 t(key, { 0: expr0, 1: expr1, ... })
           const interpolationObj = t.objectExpression(
-            expressions.map((expr: any, index: number) => 
+            expressions.map((expr: any, index: number) =>
               t.objectProperty(
                 t.identifier(String(index)),
                 expr
@@ -183,13 +203,13 @@ export class CodeTransformer {
 
           const callExpression = expressions.length > 0
             ? t.callExpression(
-                t.identifier(wrapperFunction),
-                [t.stringLiteral(key), interpolationObj]
-              )
+              t.identifier(wrapperFunction),
+              [t.stringLiteral(key), interpolationObj]
+            )
             : t.callExpression(
-                t.identifier(wrapperFunction),
-                [t.stringLiteral(key)]
-              );
+              t.identifier(wrapperFunction),
+              [t.stringLiteral(key)]
+            );
 
           nodePath.replaceWith(callExpression);
           modified = true;
@@ -223,12 +243,12 @@ export class CodeTransformer {
           if (!t.isTemplateLiteral(expr)) return;
 
           const { quasis, expressions } = expr;
-          
+
           // 只处理包含中文的模板字符串
-          const hasChineseText = quasis.some((quasi: any) => 
+          const hasChineseText = quasis.some((quasi: any) =>
             /[\u4e00-\u9fa5]/.test(quasi.value.raw)
           );
-          
+
           if (!hasChineseText) return;
 
           // 构建完整的模板字符串文本
@@ -250,7 +270,7 @@ export class CodeTransformer {
 
           // 构建 t(key, { 0: expr0, 1: expr1, ... })
           const interpolationObj = t.objectExpression(
-            expressions.map((expr: any, index: number) => 
+            expressions.map((expr: any, index: number) =>
               t.objectProperty(
                 t.identifier(String(index)),
                 expr
@@ -260,13 +280,13 @@ export class CodeTransformer {
 
           const callExpression = expressions.length > 0
             ? t.callExpression(
-                t.identifier(wrapperFunction),
-                [t.stringLiteral(key), interpolationObj]
-              )
+              t.identifier(wrapperFunction),
+              [t.stringLiteral(key), interpolationObj]
+            )
             : t.callExpression(
-                t.identifier(wrapperFunction),
-                [t.stringLiteral(key)]
-              );
+              t.identifier(wrapperFunction),
+              [t.stringLiteral(key)]
+            );
 
           nodePath.node.expression = callExpression;
           modified = true;
@@ -278,6 +298,14 @@ export class CodeTransformer {
         // 添加全局导入
         if (!hasI18nImport && importConfig.global) {
           this.addGlobalImport(ast, importConfig.global);
+        }
+
+        // 更新已有的 useTranslation 调用，添加缺少的 t
+        for (const { nodePath, funcNode } of useTranslationDeclarationsToUpdate) {
+          // 只有当这个函数需要注入时才更新
+          if (functionsNeedingInjection.has(funcNode)) {
+            this.updateUseTranslationDestructure(nodePath, wrapperFunction);
+          }
         }
 
         // 添加上下文注入（到需要的函数中）
@@ -317,14 +345,62 @@ export class CodeTransformer {
    * 标记函数需要注入上下文
    */
   private markFunctionForInjection(nodePath: any, functionsNeedingInjection: Set<any>) {
-    const funcParent = nodePath.findParent((p: any) => 
-      t.isFunctionDeclaration(p.node) || 
-      t.isFunctionExpression(p.node) || 
+    const funcParent = nodePath.findParent((p: any) =>
+      t.isFunctionDeclaration(p.node) ||
+      t.isFunctionExpression(p.node) ||
       t.isArrowFunctionExpression(p.node)
     );
-    
+
     if (funcParent) {
       functionsNeedingInjection.add(funcParent.node);
+    }
+  }
+
+  /**
+   * 检查解构模式中是否已经有指定的属性
+   */
+  private checkHasDestructuredProperty(pattern: any, propertyName: string): boolean {
+    if (t.isObjectPattern(pattern)) {
+      return pattern.properties.some((prop: any) => {
+        if (t.isObjectProperty(prop)) {
+          const key = prop.key;
+          if (t.isIdentifier(key) && key.name === propertyName) {
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+    return false;
+  }
+
+  /**
+   * 更新 useTranslation 的解构，添加缺少的属性
+   */
+  private updateUseTranslationDestructure(nodePath: any, propertyName: string): void {
+    const declarations = nodePath.node.declarations;
+    for (const decl of declarations) {
+      if (t.isCallExpression(decl.init)) {
+        const callee = decl.init.callee;
+        if (t.isIdentifier(callee) && callee.name === 'useTranslation') {
+          // 如果是对象解构模式
+          if (t.isObjectPattern(decl.id)) {
+            // 检查是否已经有这个属性
+            const hasProperty = this.checkHasDestructuredProperty(decl.id, propertyName);
+            if (!hasProperty) {
+              // 添加新的属性到解构中
+              // 创建 shorthand 属性: { t } 而不是 { t: t }
+              const newProperty = t.objectProperty(
+                t.identifier(propertyName),
+                t.identifier(propertyName),
+                false, // computed
+                true   // shorthand
+              );
+              decl.id.properties.push(newProperty);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -364,8 +440,8 @@ export class CodeTransformer {
    * 添加上下文注入到函数中
    */
   private addContextInjections(
-    ast: any, 
-    functionsNeedingInjection: Set<any>, 
+    ast: any,
+    functionsNeedingInjection: Set<any>,
     functionsWithInjection: Set<any>,
     contextInjection: string
   ) {
@@ -421,7 +497,7 @@ export class CodeTransformer {
    */
   private injectToArrowFunction(nodePath: any, injectionStatement: any) {
     const body = nodePath.node.body;
-    
+
     if (t.isBlockStatement(body)) {
       // 已经是块语句，直接在开头插入
       const clonedStatement = t.cloneNode(injectionStatement, true);
@@ -443,15 +519,15 @@ export class CodeTransformer {
       const prettierPath = this.findPrettier();
       if (prettierPath) {
         const prettier = require(prettierPath);
-        
+
         // 尝试加载项目的 prettier 配置
         const prettierConfig = await prettier.resolveConfig(filePath) || {};
-        
+
         return prettier.format(code, {
           ...prettierConfig,
           filepath: filePath,
-          parser: filePath.endsWith('.tsx') || filePath.endsWith('.jsx') 
-            ? 'typescript' 
+          parser: filePath.endsWith('.tsx') || filePath.endsWith('.jsx')
+            ? 'typescript'
             : 'babel'
         });
       }
@@ -459,7 +535,7 @@ export class CodeTransformer {
       // prettier 格式化失败，返回原代码
       console.warn('Prettier formatting failed:', error);
     }
-    
+
     return code;
   }
 
