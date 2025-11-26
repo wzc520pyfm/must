@@ -32,7 +32,7 @@ const config = {
       // React 组件：上下文注入语句
       contextInjection: "const { t } = useTranslation();",
       // 静态文件：导入自定义国际化函数
-      staticFileImport: "import { getLocal } from './utils/local';",
+      staticFileImport: "import { getLocal } from '@/utils/local';",
       // 静态文件：使用模板格式包裹
       // 支持三种格式：
       // 1. 简单函数名: "i18n.t" -> i18n.t("key")
