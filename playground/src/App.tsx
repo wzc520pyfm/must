@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 function App() {
   const { i18n } = useTranslation();
   const [count, setCount] = useState(0);
-  const [language, setLanguage] = useState(t("playground.App.zhcn"));
+  const [language, setLanguage] = useState("zh-CN");
   const changeLanguage = (lng: string) => {
     setLanguage(lng);
     i18n.changeLanguage(lng);
