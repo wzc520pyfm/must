@@ -4,10 +4,37 @@ import UserProfile from "./components/UserProfile";
 
 function App() {
   const [count, setCount] = useState(0);
+  const [language, setLanguage] = useState("zh-CN");
+
+  const changeLanguage = (lng: string) => {
+    setLanguage(lng);
+    // TODO: 运行 must 后，这里会自动集成 i18next 的语言切换
+    // i18n.changeLanguage(lng);
+  };
 
   return (
     <div className="App">
       <header className="App-header">
+        <div className="language-switcher">
+          <button
+            className={language === "zh-CN" ? "active" : ""}
+            onClick={() => changeLanguage("zh-CN")}
+          >
+            中文
+          </button>
+          <button
+            className={language === "en" ? "active" : ""}
+            onClick={() => changeLanguage("en")}
+          >
+            English
+          </button>
+          <button
+            className={language === "ja" ? "active" : ""}
+            onClick={() => changeLanguage("ja")}
+          >
+            日本語
+          </button>
+        </div>
         <h1>欢迎使用 Must 国际化工具</h1>
         <p>这是一个自动化的国际化解决方案，支持多语言文案提取与翻译。</p>
       </header>
