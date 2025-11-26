@@ -27,10 +27,14 @@ const config = {
     enabled: true,  // 开启自动转换
     // 导入配置：支持全局导入和上下文注入
     importStatement: {
-      // 全局导入语句，添加到文件顶部
+      // React 组件：全局导入语句
       global: "import { useTranslation } from 'react-i18next';",
-      // 上下文注入语句，添加到 React 组件/Hook 函数体开头
-      contextInjection: "const { t } = useTranslation();"
+      // React 组件：上下文注入语句
+      contextInjection: "const { t } = useTranslation();",
+      // 静态文件：导入 i18n 实例
+      staticFileImport: "import i18n from './i18n';",
+      // 静态文件：使用 i18n.t() 包裹
+      staticFileWrapper: "i18n.t"
     },
     wrapperFunction: 't',
     formatCode: true,  // 格式化代码

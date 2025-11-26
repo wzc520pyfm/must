@@ -32,7 +32,9 @@ export class CodeTransformer {
       // 默认配置
       return {
         global: "import { useTranslation } from 'react-i18next';",
-        contextInjection: "const { t } = useTranslation();"
+        contextInjection: "const { t } = useTranslation();",
+        staticFileImport: "import i18n from '@/i18n';",
+        staticFileWrapper: "i18n.t"
       };
     }
 
@@ -40,15 +42,67 @@ export class CodeTransformer {
       // 向后兼容：字符串格式只设置全局导入
       return {
         global: importStatement,
-        contextInjection: "const { t } = useTranslation();"
+        contextInjection: "const { t } = useTranslation();",
+        staticFileImport: "import i18n from '@/i18n';",
+        staticFileWrapper: "i18n.t"
       };
     }
 
     // 对象格式
     return {
       global: importStatement.global || "import { useTranslation } from 'react-i18next';",
-      contextInjection: importStatement.contextInjection || "const { t } = useTranslation();"
+      contextInjection: importStatement.contextInjection || "const { t } = useTranslation();",
+      staticFileImport: importStatement.staticFileImport || "import i18n from '@/i18n';",
+      staticFileWrapper: importStatement.staticFileWrapper || "i18n.t"
     };
+  }
+
+  /**
+   * 检测文件是否为静态文件（非 React 组件）
+   * 静态文件特征：
+   * 1. 不包含 JSX
+   * 2. 不包含 React 组件定义
+   * 3. 不导入 React
+   */
+  private isStaticFile(ast: any): boolean {
+    let hasJSX = false;
+    let hasReactImport = false;
+    let hasReactComponent = false;
+
+    traverse(ast, {
+      JSXElement: () => {
+        hasJSX = true;
+      },
+      JSXFragment: () => {
+        hasJSX = true;
+      },
+      ImportDeclaration: (nodePath: any) => {
+        const source = nodePath.node.source.value;
+        if (source === 'react' || source === 'React') {
+          hasReactImport = true;
+        }
+      },
+      // 检查是否有函数组件（返回 JSX 的函数）
+      FunctionDeclaration: (nodePath: any) => {
+        const name = nodePath.node.id?.name;
+        // React 组件通常以大写字母开头
+        if (name && /^[A-Z]/.test(name)) {
+          hasReactComponent = true;
+        }
+      },
+      VariableDeclarator: (nodePath: any) => {
+        const id = nodePath.node.id;
+        if (t.isIdentifier(id) && /^[A-Z]/.test(id.name)) {
+          const init = nodePath.node.init;
+          if (t.isArrowFunctionExpression(init) || t.isFunctionExpression(init)) {
+            hasReactComponent = true;
+          }
+        }
+      }
+    });
+
+    // 如果没有 JSX 且没有 React 导入，认为是静态文件
+    return !hasJSX && !hasReactImport && !hasReactComponent;
   }
 
   /**
@@ -72,10 +126,17 @@ export class CodeTransformer {
         ]
       });
 
+      // 检测是否为静态文件
+      const isStatic = this.isStaticFile(ast);
+      
       let modified = false;
       const translations = new Map<string, string>();
-      const wrapperFunction = this.config.transform.wrapperFunction || 't';
       const importConfig = this.parseImportConfig();
+      
+      // 根据文件类型选择不同的包裹函数
+      const wrapperFunction = isStatic 
+        ? (importConfig.staticFileWrapper || 'i18n.t')
+        : (this.config.transform.wrapperFunction || 't');
 
       let hasI18nImport = false;
       // 记录需要注入上下文的函数/组件
@@ -92,7 +153,11 @@ export class CodeTransformer {
       traverse(ast, {
         ImportDeclaration: (nodePath: any) => {
           const importSource = nodePath.node.source.value;
-          if (importSource === 'react-i18next' || importSource === 'i18next') {
+          // 检查是否已导入 i18n 相关模块
+          if (importSource === 'react-i18next' || 
+              importSource === 'i18next' ||
+              importSource.includes('i18n') ||
+              importSource.includes('/i18n')) {
             hasI18nImport = true;
           }
         },
@@ -328,22 +393,30 @@ export class CodeTransformer {
 
       // 如果修改了代码，添加必要的导入和上下文注入
       if (modified) {
-        // 添加全局导入
-        if (!hasI18nImport && importConfig.global) {
-          this.addGlobalImport(ast, importConfig.global);
-        }
-
-        // 更新已有的 useTranslation 调用，添加缺少的 t
-        for (const { nodePath, funcNode } of useTranslationDeclarationsToUpdate) {
-          // 只有当这个函数需要注入时才更新
-          if (functionsNeedingInjection.has(funcNode)) {
-            this.updateUseTranslationDestructure(nodePath, wrapperFunction);
+        if (isStatic) {
+          // 静态文件：添加 i18n 导入
+          if (!hasI18nImport && importConfig.staticFileImport) {
+            this.addGlobalImport(ast, importConfig.staticFileImport);
           }
-        }
+        } else {
+          // React 组件文件：添加 useTranslation 导入和上下文注入
+          if (!hasI18nImport && importConfig.global) {
+            this.addGlobalImport(ast, importConfig.global);
+          }
 
-        // 添加上下文注入（到需要的函数中）
-        if (importConfig.contextInjection) {
-          this.addContextInjections(ast, functionsNeedingInjection, functionsWithInjection, importConfig.contextInjection);
+          // 更新已有的 useTranslation 调用，添加缺少的 t
+          const reactWrapperFunction = this.config.transform.wrapperFunction || 't';
+          for (const { nodePath, funcNode } of useTranslationDeclarationsToUpdate) {
+            // 只有当这个函数需要注入时才更新
+            if (functionsNeedingInjection.has(funcNode)) {
+              this.updateUseTranslationDestructure(nodePath, reactWrapperFunction);
+            }
+          }
+
+          // 添加上下文注入（到需要的函数中）
+          if (importConfig.contextInjection) {
+            this.addContextInjections(ast, functionsNeedingInjection, functionsWithInjection, importConfig.contextInjection);
+          }
         }
       }
 
@@ -391,7 +464,7 @@ export class CodeTransformer {
 
   /**
    * 创建带原文注释的 t() 调用
-   * 生成: t("key", \/\* 原文 \*\/)
+   * 生成: t("key", \/\* 原文 \*\/) 或 i18n.t("key", \/\* 原文 \*\/)
    */
   private createTCallWithComment(
     wrapperFunction: string,
@@ -411,16 +484,25 @@ export class CodeTransformer {
     
     t.addComment(keyLiteral, 'trailing', ` ${commentText} `, false);
 
-    if (interpolationArgs) {
-      return t.callExpression(
-        t.identifier(wrapperFunction),
-        [keyLiteral, interpolationArgs]
+    // 构建调用表达式的 callee
+    // 支持 "t" 或 "i18n.t" 这种形式
+    let callee: any;
+    if (wrapperFunction.includes('.')) {
+      // 成员表达式，如 i18n.t
+      const parts = wrapperFunction.split('.');
+      callee = t.memberExpression(
+        t.identifier(parts[0]),
+        t.identifier(parts[1])
       );
     } else {
-      return t.callExpression(
-        t.identifier(wrapperFunction),
-        [keyLiteral]
-      );
+      // 简单标识符，如 t
+      callee = t.identifier(wrapperFunction);
+    }
+
+    if (interpolationArgs) {
+      return t.callExpression(callee, [keyLiteral, interpolationArgs]);
+    } else {
+      return t.callExpression(callee, [keyLiteral]);
     }
   }
 

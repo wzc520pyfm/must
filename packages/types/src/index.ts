@@ -12,6 +12,18 @@ export interface ImportConfig {
    * 例如: "const { t } = useTranslation();"
    */
   contextInjection?: string;
+  /**
+   * 静态文件的导入语句（用于非 React 组件的纯 JS/TS 文件）
+   * 例如: "import i18n from '@/i18n';"
+   * 静态文件会使用 i18n.t() 而不是 useTranslation hook
+   */
+  staticFileImport?: string;
+  /**
+   * 静态文件中使用的翻译函数
+   * 例如: "i18n.t" 会生成 i18n.t("key")
+   * 默认: "i18n.t"
+   */
+  staticFileWrapper?: string;
 }
 
 export interface TransformConfig {
