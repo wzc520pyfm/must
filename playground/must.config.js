@@ -8,6 +8,7 @@ const config = {
   translationProvider: 'baidu',
   outputDir: 'src/i18n',
   patchDir: 'src/i18n/patches',  // patch 目录
+  keyStyle: 'dot',  // 使用点分隔的 key 风格
   inputPatterns: [
     'src/**/*.{ts,tsx}'
   ],
@@ -15,7 +16,14 @@ const config = {
     'node_modules/**',
     'dist/**',
     'src/i18n/**'
-  ]
+  ],
+  // 代码转换配置
+  transform: {
+    enabled: false,  // 暂时关闭自动转换，先看 key 生成
+    importStatement: "import { useTranslation } from 'react-i18next';",
+    wrapperFunction: 't',
+  }
 };
 
 module.exports = config;
+

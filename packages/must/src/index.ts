@@ -1,6 +1,7 @@
 import { ConfigManager } from './config';
 import { TextExtractor } from './extractors';
 import { TranslationManager } from './translators';
+import { CodeTransformer } from './transformer';
 import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile } from './utils/file';
 import { deduplicateTexts, generateKey } from './utils/text';
 import { I18nConfig, ExtractedText } from '@must/types';
@@ -119,11 +120,18 @@ export class AutoI18n {
       if (existingTextToKey.has(sourceText)) {
         key = existingTextToKey.get(sourceText)!;
       } else {
+        // 获取英文翻译用于生成 key
+        const enTranslations = translations['en'] || translations[this.config.targetLanguages[0]];
+        const enTranslation = enTranslations?.find(t => t.sourceText === sourceText);
+        const translatedForKey = enTranslation?.translatedText || sourceText;
+        
         // 生成新的唯一 key
         key = generateKey(
           sourceText,
           extracted.file,
+          translatedForKey,
           this.config.appName,
+          this.config.keyStyle || 'dot',
           this.existingKeys
         );
         this.existingKeys.add(key);
@@ -245,6 +253,47 @@ export class AutoI18n {
     console.log(`📦 Generated patch file: ${patchFileName} (${totalNew / (this.config.targetLanguages.length + 1)} new translations)`);
   }
 
+  async transformSourceFiles(
+    translations: Record<string, Record<string, string>>
+  ): Promise<void> {
+    if (!this.config.transform?.enabled) {
+      return;
+    }
+
+    console.log('🔄 Transforming source files...');
+
+    // 创建 text -> key 的映射
+    const keyMap = new Map<string, string>();
+    const sourceTranslations = translations[this.config.sourceLanguage];
+    Object.entries(sourceTranslations).forEach(([key, text]) => {
+      keyMap.set(text, key);
+    });
+
+    // 创建转换器
+    const transformer = new CodeTransformer(this.config, keyMap);
+
+    // 获取需要转换的文件
+    const files = await findFiles(this.config.inputPatterns, this.config.excludePatterns);
+    
+    let transformedCount = 0;
+    for (const file of files) {
+      try {
+        const code = fs.readFileSync(file, 'utf-8');
+        const result = transformer.transform(code, file);
+
+        if (result.modified) {
+          fs.writeFileSync(file, result.code, 'utf-8');
+          transformedCount++;
+          console.log(`  ✓ Transformed ${file}`);
+        }
+      } catch (error) {
+        console.warn(`  ⚠️  Failed to transform ${file}:`, error);
+      }
+    }
+
+    console.log(`✅ Transformed ${transformedCount} files`);
+  }
+
   async generateReport(extractedTexts: ExtractedText[]): Promise<void> {
     console.log('📊 Generating extraction report...');
 
@@ -278,6 +327,9 @@ export class AutoI18n {
       const { translations, sourceMap } = await this.translateTexts(extractedTexts);
       await this.generateI18nFiles(translations, sourceMap);
       await this.generateReport(extractedTexts);
+      
+      // 执行代码转换（如果启用）
+      await this.transformSourceFiles(translations);
 
       console.log('🎉 Auto i18n process completed successfully!');
     } catch (error) {

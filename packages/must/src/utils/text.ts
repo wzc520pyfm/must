@@ -3,62 +3,83 @@ export function normalizeText(text: string): string {
 }
 
 /**
- * 生成翻译后文本的简短版本（用于 key）
+ * 将文本转换为驼峰命名
  */
-function generateShortTranslation(text: string, maxLength: number = 30): string {
+function toCamelCase(text: string): string {
   return text
-    .toLowerCase()
-    .replace(/[^\w\s\u4e00-\u9fa5]/g, '') // 保留字母、数字、空格和中文
-    .replace(/\s+/g, '_')
-    .substring(0, maxLength);
+    .replace(/[^\w\s]/g, '') // 移除特殊字符
+    .split(/\s+/)
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toLowerCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join('');
 }
 
 /**
- * 从文件路径生成简短的路径标识
+ * 从文件路径生成路径部分（不含扩展名）
  */
-function generatePathKey(filePath: string): string {
-  // 移除文件扩展名和常见的目录前缀
+function generatePathPart(filePath: string): string {
   return filePath
     .replace(/\.(tsx?|jsx?|vue|html)$/, '')
     .replace(/^(src\/|app\/|pages\/|components\/)/, '')
-    .replace(/[\/\\]/g, '_')
-    .toLowerCase();
+    .replace(/\\/g, '/')
+    .split('/')
+    .filter(Boolean)
+    .join('.');
 }
 
 /**
  * 生成唯一的 i18n key
- * 格式: {appName}_{filePath}_{shortTranslation}[_{counter}]
+ * 使用英文翻译作为 key 的一部分
+ * 格式: {appName}.{filePath}.{translatedKey}[_{counter}]
  */
 export function generateKey(
-  text: string, 
+  text: string,
   filePath: string,
+  translatedText: string,  // 英文翻译
   appName?: string,
+  keyStyle: 'dot' | 'underscore' = 'dot',
   existingKeys: Set<string> = new Set()
 ): string {
+  const separator = keyStyle === 'dot' ? '.' : '_';
   const parts: string[] = [];
   
   // 添加应用名称
   if (appName) {
-    parts.push(appName.toLowerCase().replace(/[^\w]/g, '_'));
+    parts.push(appName.toLowerCase().replace(/[^\w]/g, ''));
   }
   
   // 添加文件路径
-  const pathKey = generatePathKey(filePath);
-  parts.push(pathKey);
+  const pathPart = generatePathPart(filePath);
+  if (pathPart) {
+    if (keyStyle === 'dot') {
+      parts.push(pathPart);
+    } else {
+      parts.push(pathPart.replace(/\./g, '_'));
+    }
+  }
   
-  // 添加文本的简短翻译
-  const shortText = generateShortTranslation(text);
-  parts.push(shortText);
+  // 使用英文翻译生成 key 的最后部分
+  const translatedKey = toCamelCase(translatedText);
+  if (translatedKey) {
+    parts.push(translatedKey);
+  } else {
+    // 如果翻译为空，使用原文
+    parts.push(toCamelCase(text));
+  }
   
   // 生成基础 key
-  let baseKey = parts.filter(Boolean).join('_');
+  let baseKey = parts.filter(Boolean).join(separator);
   
   // 如果 key 已存在，添加计数器
   let finalKey = baseKey;
   let counter = 1;
   
   while (existingKeys.has(finalKey)) {
-    finalKey = `${baseKey}_${counter}`;
+    finalKey = `${baseKey}${separator}${counter}`;
     counter++;
   }
   
@@ -96,5 +117,6 @@ export function isSimilarText(text1: string, text2: string, threshold: number = 
   const similarity = intersection.size / union.size;
   return similarity >= threshold;
 }
+
 
 

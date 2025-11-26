@@ -1,3 +1,16 @@
+export interface TransformConfig {
+  enabled?: boolean;  // 是否启用自动转换
+  importStatement?: string;  // 自定义 import 语句
+  wrapperFunction?: string;  // 包裹函数名，默认 't'
+  // 自定义转换函数
+  customTransform?: (params: {
+    text: string;
+    key: string;
+    sourceCode: string;
+    filePath: string;
+  }) => string;
+}
+
 export interface I18nConfig {
   appName?: string;  // 应用名称，用于生成 key
   sourceLanguage: string;
@@ -11,6 +24,8 @@ export interface I18nConfig {
   excludePatterns: string[];
   customTranslator?: string;
   patchDir?: string;  // patch 目录，用于存储增量翻译
+  keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
+  transform?: TransformConfig;  // 代码转换配置
 }
 
 export interface ExtractedText {
