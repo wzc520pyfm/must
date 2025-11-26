@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./UserProfile.css";
-
+import { UUName, UUName2 } from "../constants";
 interface UserProfileProps {
   initialName?: string;
 }
@@ -28,7 +28,7 @@ function UserProfile({ initialName }: UserProfileProps) {
 
       <div className="profile-card">
         <div className="profile-header">
-          <h3>欢迎回来，{name}！</h3>
+          <h3>欢迎回来，{name}！{UUName} {UUName2}</h3>
           <p>当前等级：{level} 级</p>
         </div>
 

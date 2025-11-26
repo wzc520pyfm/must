@@ -133,8 +133,50 @@ export class CodeTransformer {
         }
       });
 
+      // 记录已处理的 JSX 元素，避免重复处理
+      const processedJSXElements = new Set<any>();
+
       // 第二遍：遍历并替换字符串，同时记录需要注入的函数
       traverse(ast, {
+        // 处理 JSX 元素中的混合内容（文本 + 表达式）
+        JSXElement: (nodePath: any) => {
+          if (processedJSXElements.has(nodePath.node)) return;
+
+          const result = this.tryMergeJSXChildren(nodePath, wrapperFunction);
+          if (result) {
+            const { mergedText, expressions } = result;
+            const key = this.keyMap.get(mergedText);
+            
+            if (key) {
+              processedJSXElements.add(nodePath.node);
+              translations.set(mergedText, key);
+              this.markFunctionForInjection(nodePath, functionsNeedingInjection);
+
+              // 创建带插值的 t() 调用
+              const interpolationObj = expressions.length > 0
+                ? t.objectExpression(
+                    expressions.map((expr: any, index: number) =>
+                      t.objectProperty(
+                        t.identifier(String(index)),
+                        t.cloneNode(expr, true)
+                      )
+                    )
+                  )
+                : undefined;
+
+              const callExpression = this.createTCallWithComment(
+                wrapperFunction,
+                key,
+                mergedText,
+                interpolationObj
+              );
+
+              // 替换所有子元素为单个 {t(...)}
+              nodePath.node.children = [t.jsxExpressionContainer(callExpression)];
+              modified = true;
+            }
+          }
+        },
         // 处理普通字符串
         StringLiteral: (nodePath: any) => {
           const text = nodePath.node.value;
@@ -146,11 +188,8 @@ export class CodeTransformer {
             // 记录包含此字符串的函数组件
             this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
-            // 使用 t(key) 替换
-            const callExpression = t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key)]
-            );
+            // 使用 t(key /* 原文 */) 替换
+            const callExpression = this.createTCallWithComment(wrapperFunction, key, text);
 
             // 如果是 JSX 属性值，需要包裹在 JSXExpressionContainer 中
             if (nodePath.parent && t.isJSXAttribute(nodePath.parent)) {
@@ -191,25 +230,24 @@ export class CodeTransformer {
           // 记录包含此模板字符串的函数组件
           this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
-          // 构建 t(key, { 0: expr0, 1: expr1, ... })
-          const interpolationObj = t.objectExpression(
-            expressions.map((expr: any, index: number) =>
-              t.objectProperty(
-                t.identifier(String(index)),
-                expr
+          // 构建 t(key /* 原文 */, { 0: expr0, 1: expr1, ... })
+          const interpolationObj = expressions.length > 0 
+            ? t.objectExpression(
+                expressions.map((expr: any, index: number) =>
+                  t.objectProperty(
+                    t.identifier(String(index)),
+                    expr
+                  )
+                )
               )
-            )
-          );
+            : undefined;
 
-          const callExpression = expressions.length > 0
-            ? t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key), interpolationObj]
-            )
-            : t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key)]
-            );
+          const callExpression = this.createTCallWithComment(
+            wrapperFunction, 
+            key, 
+            fullText.trim(),
+            interpolationObj
+          );
 
           nodePath.replaceWith(callExpression);
           modified = true;
@@ -226,12 +264,8 @@ export class CodeTransformer {
             // 记录包含此 JSX 文本的函数组件
             this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
-            // JSX 中需要用 {t(key)} 包裹
-            const callExpression = t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key)]
-            );
-
+            // JSX 中需要用 {t(key /* 原文 */)} 包裹
+            const callExpression = this.createTCallWithComment(wrapperFunction, key, text);
             const jsxExpression = t.jsxExpressionContainer(callExpression);
             nodePath.replaceWith(jsxExpression);
             modified = true;
@@ -268,25 +302,24 @@ export class CodeTransformer {
           // 记录包含此模板字符串的函数组件
           this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
-          // 构建 t(key, { 0: expr0, 1: expr1, ... })
-          const interpolationObj = t.objectExpression(
-            expressions.map((expr: any, index: number) =>
-              t.objectProperty(
-                t.identifier(String(index)),
-                expr
+          // 构建 t(key /* 原文 */, { 0: expr0, 1: expr1, ... })
+          const interpolationObj = expressions.length > 0
+            ? t.objectExpression(
+                expressions.map((expr: any, index: number) =>
+                  t.objectProperty(
+                    t.identifier(String(index)),
+                    expr
+                  )
+                )
               )
-            )
-          );
+            : undefined;
 
-          const callExpression = expressions.length > 0
-            ? t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key), interpolationObj]
-            )
-            : t.callExpression(
-              t.identifier(wrapperFunction),
-              [t.stringLiteral(key)]
-            );
+          const callExpression = this.createTCallWithComment(
+            wrapperFunction,
+            key,
+            fullText.trim(),
+            interpolationObj
+          );
 
           nodePath.node.expression = callExpression;
           modified = true;
@@ -353,6 +386,41 @@ export class CodeTransformer {
 
     if (funcParent) {
       functionsNeedingInjection.add(funcParent.node);
+    }
+  }
+
+  /**
+   * 创建带原文注释的 t() 调用
+   * 生成: t("key", \/\* 原文 \*\/)
+   */
+  private createTCallWithComment(
+    wrapperFunction: string,
+    key: string,
+    originalText: string,
+    interpolationArgs?: any
+  ): any {
+    const keyLiteral = t.stringLiteral(key);
+    
+    // 添加尾部注释（原文）
+    // 截断过长的原文
+    const maxCommentLength = 30;
+    let commentText = originalText.replace(/\n/g, ' ').trim();
+    if (commentText.length > maxCommentLength) {
+      commentText = commentText.substring(0, maxCommentLength) + '...';
+    }
+    
+    t.addComment(keyLiteral, 'trailing', ` ${commentText} `, false);
+
+    if (interpolationArgs) {
+      return t.callExpression(
+        t.identifier(wrapperFunction),
+        [keyLiteral, interpolationArgs]
+      );
+    } else {
+      return t.callExpression(
+        t.identifier(wrapperFunction),
+        [keyLiteral]
+      );
     }
   }
 
@@ -570,12 +638,13 @@ export class CodeTransformer {
       return false;
     }
 
-    // 不转换 className 等属性
+    // 不转换技术性 JSX 属性（但 placeholder, title, alt 等需要翻译）
     if (nodePath.parent && t.isJSXAttribute(nodePath.parent)) {
       const attrName = nodePath.parent.name;
       if (t.isJSXIdentifier(attrName)) {
-        const skipAttrs = ['className', 'class', 'id', 'key', 'ref', 'style', 'src', 'href', 'type', 'name', 'placeholder'];
-        if (skipAttrs.includes(attrName.name)) {
+        // 只跳过纯技术性属性，用户可见的属性（placeholder, title, alt, aria-label）需要翻译
+        const skipAttrs = ['className', 'class', 'id', 'key', 'ref', 'style', 'src', 'href', 'type', 'name', 'htmlFor', 'data-testid'];
+        if (skipAttrs.includes(attrName.name) || attrName.name.startsWith('data-')) {
           return false;
         }
       }
@@ -617,5 +686,62 @@ export class CodeTransformer {
     }
 
     return true;
+  }
+
+  /**
+   * 尝试合并 JSX 元素的子节点为一个带插值的字符串
+   * 例如: <p>当前等级：{level} 级</p> => "当前等级：{{0}} 级"
+   */
+  private tryMergeJSXChildren(nodePath: any, wrapperFunction: string): { mergedText: string; expressions: any[] } | null {
+    const children = nodePath.node.children;
+    if (!children || children.length <= 1) return null;
+
+    // 检查是否有混合内容（文本 + 表达式）
+    const hasText = children.some((child: any) => 
+      t.isJSXText(child) && /[\u4e00-\u9fa5]/.test(child.value)
+    );
+    const hasExpression = children.some((child: any) => 
+      t.isJSXExpressionContainer(child) && !t.isJSXEmptyExpression(child.expression)
+    );
+
+    if (!hasText || !hasExpression) return null;
+
+    // 构建合并的文本和表达式列表
+    let mergedText = '';
+    const expressions: any[] = [];
+    let expressionIndex = 0;
+
+    for (const child of children) {
+      if (t.isJSXText(child)) {
+        // 处理文本节点
+        const text = child.value.replace(/^\s*\n\s*/g, '').replace(/\s*\n\s*$/g, '');
+        if (text) {
+          mergedText += text;
+        }
+      } else if (t.isJSXExpressionContainer(child) && !t.isJSXEmptyExpression(child.expression)) {
+        const expr = child.expression;
+        
+        // 如果表达式已经是 t() 调用，跳过合并
+        if (t.isCallExpression(expr)) {
+          const callee = expr.callee;
+          if (t.isIdentifier(callee) && callee.name === wrapperFunction) {
+            return null; // 已经被翻译过
+          }
+        }
+        
+        mergedText += `{{${expressionIndex}}}`;
+        expressions.push(expr);
+        expressionIndex++;
+      }
+    }
+
+    const trimmedText = mergedText.trim();
+    
+    // 只有当包含中文且在 keyMap 中有对应的 key 时才返回
+    if (trimmedText && /[\u4e00-\u9fa5]/.test(trimmedText) && this.keyMap.has(trimmedText)) {
+      return { mergedText: trimmedText, expressions };
+    }
+
+    return null;
   }
 }
