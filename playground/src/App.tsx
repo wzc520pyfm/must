@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import "./App.css";
 import UserProfile from "./components/UserProfile";
-
+import { useTranslation } from "react-i18next";
 function App() {
+  const { i18n } = useTranslation();
   const [count, setCount] = useState(0);
-  const [language, setLanguage] = useState("zh-CN");
-
+  const [language, setLanguage] = useState(t("playground.App.zhcn"));
   const changeLanguage = (lng: string) => {
     setLanguage(lng);
-    // TODO: 运行 must 后，这里会自动集成 i18next 的语言切换
-    // i18n.changeLanguage(lng);
+    i18n.changeLanguage(lng);
   };
 
   return (
