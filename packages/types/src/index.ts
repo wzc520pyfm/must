@@ -1,4 +1,5 @@
 export interface I18nConfig {
+  appName?: string;  // 应用名称，用于生成 key
   sourceLanguage: string;
   targetLanguages: string[];
   translationProvider: 'google' | 'baidu' | 'youdao' | 'azure';
@@ -9,6 +10,7 @@ export interface I18nConfig {
   inputPatterns: string[];
   excludePatterns: string[];
   customTranslator?: string;
+  patchDir?: string;  // patch 目录，用于存储增量翻译
 }
 
 export interface ExtractedText {

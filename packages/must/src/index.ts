@@ -4,17 +4,39 @@ import { TranslationManager } from './translators';
 import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile } from './utils/file';
 import { deduplicateTexts, generateKey } from './utils/text';
 import { I18nConfig, ExtractedText } from '@must/types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class AutoI18n {
   private config: I18nConfig;
   private extractor: TextExtractor;
   private translator: TranslationManager;
+  private existingKeys: Set<string> = new Set();
 
   constructor(config?: I18nConfig) {
     const configManager = new ConfigManager();
     this.config = config || configManager.getConfig();
     this.extractor = new TextExtractor();
     this.translator = new TranslationManager(this.config);
+    
+    // 加载已存在的 keys
+    this.loadExistingKeys();
+  }
+
+  /**
+   * 加载已存在的翻译 keys
+   */
+  private loadExistingKeys(): void {
+    try {
+      const sourceFile = path.join(this.config.outputDir, `${this.config.sourceLanguage}.json`);
+      if (fs.existsSync(sourceFile)) {
+        const content = fs.readFileSync(sourceFile, 'utf-8');
+        const translations = JSON.parse(content);
+        Object.keys(translations).forEach(key => this.existingKeys.add(key));
+      }
+    } catch (error) {
+      // 如果文件不存在或无法读取，继续使用空的 keys
+    }
   }
 
   async extractTexts(): Promise<ExtractedText[]> {
@@ -38,11 +60,22 @@ export class AutoI18n {
     return allExtractedTexts;
   }
 
-  async translateTexts(extractedTexts: ExtractedText[]): Promise<Record<string, Record<string, string>>> {
+  async translateTexts(extractedTexts: ExtractedText[]): Promise<{
+    translations: Record<string, Record<string, string>>,
+    sourceMap: Record<string, ExtractedText>
+  }> {
     console.log('🌐 Translating texts...');
 
-    // Get unique texts
-    const uniqueTexts = deduplicateTexts(extractedTexts.map(t => t.text));
+    // 去重并保留第一个出现的位置信息
+    const textMap = new Map<string, ExtractedText>();
+    extractedTexts.forEach(extracted => {
+      const normalized = extracted.text.trim();
+      if (normalized && !textMap.has(normalized)) {
+        textMap.set(normalized, extracted);
+      }
+    });
+
+    const uniqueTexts = Array.from(textMap.keys());
     console.log(`📝 Found ${uniqueTexts.length} unique texts to translate`);
 
     // Translate to all target languages
@@ -54,50 +87,162 @@ export class AutoI18n {
 
     // Generate keys and organize translations
     const result: Record<string, Record<string, string>> = {};
+    const sourceMap: Record<string, ExtractedText> = {};
 
-    for (const [targetLang, translationResults] of Object.entries(translations)) {
+    // 初始化每个语言的翻译对象
+    for (const targetLang of this.config.targetLanguages) {
       result[targetLang] = {};
+    }
 
-      for (const translation of translationResults) {
-        const key = generateKey(translation.sourceText);
-        result[targetLang][key] = translation.translatedText;
+    // 处理源语言
+    result[this.config.sourceLanguage] = {};
+
+    // 创建 text -> existing key 的映射
+    const existingTextToKey = new Map<string, string>();
+    try {
+      const sourceFile = path.join(this.config.outputDir, `${this.config.sourceLanguage}.json`);
+      if (fs.existsSync(sourceFile)) {
+        const content = JSON.parse(fs.readFileSync(sourceFile, 'utf-8'));
+        Object.entries(content).forEach(([key, text]) => {
+          existingTextToKey.set(text as string, key);
+        });
+      }
+    } catch (error) {
+      // 忽略错误
+    }
+
+    for (const sourceText of uniqueTexts) {
+      const extracted = textMap.get(sourceText)!;
+      
+      // 如果文本已经存在，使用已有的 key
+      let key: string;
+      if (existingTextToKey.has(sourceText)) {
+        key = existingTextToKey.get(sourceText)!;
+      } else {
+        // 生成新的唯一 key
+        key = generateKey(
+          sourceText,
+          extracted.file,
+          this.config.appName,
+          this.existingKeys
+        );
+        this.existingKeys.add(key);
+      }
+      
+      sourceMap[key] = extracted;
+
+      // 添加源语言文本
+      result[this.config.sourceLanguage][key] = sourceText;
+
+      // 添加目标语言翻译
+      for (const targetLang of this.config.targetLanguages) {
+        const langTranslations = translations[targetLang];
+        if (langTranslations) {
+          const translation = langTranslations.find(t => t.sourceText === sourceText);
+          result[targetLang][key] = translation?.translatedText || sourceText;
+        }
       }
     }
 
     console.log('✅ Translation completed');
-    return result;
+    return { translations: result, sourceMap };
   }
 
-  async generateI18nFiles(translations: Record<string, Record<string, string>>): Promise<void> {
+  async generateI18nFiles(
+    translations: Record<string, Record<string, string>>,
+    sourceMap: Record<string, ExtractedText>
+  ): Promise<void> {
     console.log('📄 Generating i18n files...');
 
     ensureOutputDirectory(this.config.outputDir);
 
-    // Generate files for each target language
-    for (const [language, texts] of Object.entries(translations)) {
+    // 加载现有翻译
+    const existingTranslations: Record<string, Record<string, string>> = {};
+    for (const lang of [this.config.sourceLanguage, ...this.config.targetLanguages]) {
+      const langFile = path.join(this.config.outputDir, `${lang}.json`);
+      if (fs.existsSync(langFile)) {
+        existingTranslations[lang] = JSON.parse(fs.readFileSync(langFile, 'utf-8'));
+      } else {
+        existingTranslations[lang] = {};
+      }
+    }
+
+    // 合并新旧翻译
+    const mergedTranslations: Record<string, Record<string, string>> = {};
+    const newTranslations: Record<string, Record<string, string>> = {};
+
+    for (const lang of [this.config.sourceLanguage, ...this.config.targetLanguages]) {
+      mergedTranslations[lang] = { ...existingTranslations[lang] };
+      newTranslations[lang] = {};
+
+      // 添加新的翻译
+      for (const [key, value] of Object.entries(translations[lang] || {})) {
+        if (!existingTranslations[lang][key]) {
+          // 这是新增的翻译
+          newTranslations[lang][key] = value;
+        }
+        mergedTranslations[lang][key] = value;
+      }
+    }
+
+    // 写入完整的翻译文件
+    for (const [language, texts] of Object.entries(mergedTranslations)) {
       writeI18nFile(this.config.outputDir, language, texts);
       console.log(`📝 Generated ${language}.json with ${Object.keys(texts).length} translations`);
     }
 
-    // Generate source language file
-    const sourceTexts: Record<string, string> = {};
-    const uniqueSourceTexts = deduplicateTexts(
-      Object.values(translations)[0] ?
-        Object.keys(Object.values(translations)[0]).map(key => {
-          // Find original text by key
-          const translation = Object.values(translations)[0][key];
-          // This is a simplified approach - in practice you'd want to store the mapping
-          return translation;
-        }) : []
+    // 生成 patch 文件（仅包含新增的翻译）
+    await this.generatePatchFiles(newTranslations, sourceMap);
+  }
+
+  async generatePatchFiles(
+    newTranslations: Record<string, Record<string, string>>,
+    sourceMap: Record<string, ExtractedText>
+  ): Promise<void> {
+    const patchDir = this.config.patchDir || path.join(this.config.outputDir, 'patches');
+    
+    // 检查是否有新增翻译
+    const hasNewTranslations = Object.values(newTranslations).some(
+      translations => Object.keys(translations).length > 0
     );
 
-    uniqueSourceTexts.forEach(text => {
-      const key = generateKey(text);
-      sourceTexts[key] = text;
-    });
+    if (!hasNewTranslations) {
+      console.log('ℹ️  No new translations to patch');
+      return;
+    }
 
-    writeI18nFile(this.config.outputDir, this.config.sourceLanguage, sourceTexts);
-    console.log(`📝 Generated ${this.config.sourceLanguage}.json`);
+    ensureOutputDirectory(patchDir);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+    const patchFileName = `patch-${timestamp}-${Date.now()}.json`;
+    const patchPath = path.join(patchDir, patchFileName);
+
+    // 构建 patch 数据
+    const patchData = {
+      timestamp: new Date().toISOString(),
+      sourceLanguage: this.config.sourceLanguage,
+      targetLanguages: this.config.targetLanguages,
+      translations: newTranslations,
+      metadata: Object.fromEntries(
+        Object.entries(sourceMap).map(([key, extracted]) => [
+          key,
+          {
+            file: extracted.file,
+            line: extracted.line,
+            column: extracted.column,
+            type: extracted.type
+          }
+        ])
+      )
+    };
+
+    fs.writeFileSync(patchPath, JSON.stringify(patchData, null, 2), 'utf-8');
+    
+    const totalNew = Object.values(newTranslations).reduce(
+      (sum, trans) => sum + Object.keys(trans).length, 
+      0
+    );
+    console.log(`📦 Generated patch file: ${patchFileName} (${totalNew / (this.config.targetLanguages.length + 1)} new translations)`);
   }
 
   async generateReport(extractedTexts: ExtractedText[]): Promise<void> {
@@ -113,11 +258,9 @@ export class AutoI18n {
       byFile: Object.fromEntries(groupedByFile)
     };
 
-    const fs = require('fs');
-    const { ensureOutputDirectory } = require('./utils/file');
     ensureOutputDirectory(this.config.outputDir);
 
-    const reportPath = `${this.config.outputDir}/extraction-report.json`;
+    const reportPath = path.join(this.config.outputDir, 'extraction-report.json');
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
     console.log(`📋 Report saved to ${reportPath}`);
   }
@@ -132,8 +275,8 @@ export class AutoI18n {
         return;
       }
 
-      const translations = await this.translateTexts(extractedTexts);
-      await this.generateI18nFiles(translations);
+      const { translations, sourceMap } = await this.translateTexts(extractedTexts);
+      await this.generateI18nFiles(translations, sourceMap);
       await this.generateReport(extractedTexts);
 
       console.log('🎉 Auto i18n process completed successfully!');
@@ -146,4 +289,5 @@ export class AutoI18n {
 
 export { ConfigManager, TextExtractor, TranslationManager };
 export type { I18nConfig, ExtractedText };
+
 

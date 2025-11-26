@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -7,53 +7,55 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Welcome to Must Playground</h1>
-        <p>This is a testing environment for the Must internationalization tool.</p>
+        <h1>欢迎使用 Must 国际化工具</h1>
+        <p>这是一个自动化的国际化解决方案，支持多语言文案提取与翻译。</p>
       </header>
 
       <main className="main-content">
         <section className="counter-section">
-          <h2>Counter Example</h2>
-          <p>Current count: {count}</p>
-          <button onClick={() => setCount(count + 1)}>
-            Increment Counter
-          </button>
-          <button onClick={() => setCount(0)}>
-            Reset Counter
-          </button>
+          <h2>计数器示例</h2>
+          <p>当前计数：{count}</p>
+          <button onClick={() => setCount(count + 1)}>增加计数</button>
+          <button onClick={() => setCount(0)}>重置计数</button>
         </section>
 
         <section className="features-section">
-          <h2>Features</h2>
+          <h2>核心功能</h2>
           <div className="features-grid">
             <div className="feature-card">
-              <h3>Auto Extract</h3>
-              <p>Automatically extract text from your code</p>
+              <h3>自动提取</h3>
+              <p>自动从代码中提取所有文案</p>
             </div>
             <div className="feature-card">
-              <h3>Auto Translate</h3>
-              <p>Translate text to multiple languages</p>
+              <h3>智能翻译</h3>
+              <p>支持多种翻译服务商，一键翻译多语言</p>
             </div>
             <div className="feature-card">
-              <h3>Easy to Use</h3>
-              <p>Simple CLI commands for quick setup</p>
+              <h3>简单易用</h3>
+              <p>通过简单的命令行工具快速集成</p>
             </div>
           </div>
         </section>
 
         <section className="instructions">
-          <h2>How to Test</h2>
+          <h2>使用方法</h2>
           <ol>
-            <li>Run <code>pnpm must</code> in the playground directory</li>
-            <li>Check the generated <code>i18n/strings</code> directory</li>
-            <li>Review the extracted texts and translations</li>
+            <li>
+              在项目根目录运行 <code>pnpm must</code> 命令
+            </li>
+            <li>
+              查看生成的 <code>src/i18n</code> 目录
+            </li>
+            <li>检查提取的文案和翻译结果</li>
           </ol>
         </section>
       </main>
 
       <footer className="app-footer">
-        <p>Built with React and Vite</p>
-        <p>Powered by Must - Automated i18n Tool</p>
+        <p>基于 React 和 Vite 构建</p>
+        <p>由 Must 提供技术支持 - 智能国际化工具</p>
+        <p>新增的测试文案</p>
+        <p>这是第二条新增的文案，用于测试增量翻译</p>
       </footer>
     </div>
   );

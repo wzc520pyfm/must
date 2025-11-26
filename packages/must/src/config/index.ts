@@ -4,10 +4,11 @@ import { I18nConfig } from '@must/types';
 import { pathToFileURL } from 'url';
 
 const DEFAULT_CONFIG: Partial<I18nConfig> = {
-  sourceLanguage: 'en',
-  targetLanguages: ['zh-CN'],
+  sourceLanguage: 'zh-CN',  // 默认源语言为中文
+  targetLanguages: ['en'],  // 默认目标语言为英文
   translationProvider: 'google',
   outputDir: 'i18n/strings',
+  patchDir: 'i18n/patches',  // 默认 patch 目录
   inputPatterns: [
     '**/*.js',
     '**/*.jsx',

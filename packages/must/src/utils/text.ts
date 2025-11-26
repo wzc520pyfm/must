@@ -2,24 +2,67 @@ export function normalizeText(text: string): string {
   return text.trim().replace(/\s+/g, ' ');
 }
 
-export function generateKey(text: string, context?: string): string {
-  // Generate a meaningful key from the text
-  let key = text
+/**
+ * 生成翻译后文本的简短版本（用于 key）
+ */
+function generateShortTranslation(text: string, maxLength: number = 30): string {
+  return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, '') // Remove special characters
-    .replace(/\s+/g, '_') // Replace spaces with underscores
-    .substring(0, 50); // Limit length
+    .replace(/[^\w\s\u4e00-\u9fa5]/g, '') // 保留字母、数字、空格和中文
+    .replace(/\s+/g, '_')
+    .substring(0, maxLength);
+}
+
+/**
+ * 从文件路径生成简短的路径标识
+ */
+function generatePathKey(filePath: string): string {
+  // 移除文件扩展名和常见的目录前缀
+  return filePath
+    .replace(/\.(tsx?|jsx?|vue|html)$/, '')
+    .replace(/^(src\/|app\/|pages\/|components\/)/, '')
+    .replace(/[\/\\]/g, '_')
+    .toLowerCase();
+}
+
+/**
+ * 生成唯一的 i18n key
+ * 格式: {appName}_{filePath}_{shortTranslation}[_{counter}]
+ */
+export function generateKey(
+  text: string, 
+  filePath: string,
+  appName?: string,
+  existingKeys: Set<string> = new Set()
+): string {
+  const parts: string[] = [];
   
-  if (context) {
-    const contextKey = context
-      .toLowerCase()
-      .replace(/[^\w\s]/g, '')
-      .replace(/\s+/g, '_')
-      .substring(0, 20);
-    key = `${contextKey}_${key}`;
+  // 添加应用名称
+  if (appName) {
+    parts.push(appName.toLowerCase().replace(/[^\w]/g, '_'));
   }
   
-  return key || 'text';
+  // 添加文件路径
+  const pathKey = generatePathKey(filePath);
+  parts.push(pathKey);
+  
+  // 添加文本的简短翻译
+  const shortText = generateShortTranslation(text);
+  parts.push(shortText);
+  
+  // 生成基础 key
+  let baseKey = parts.filter(Boolean).join('_');
+  
+  // 如果 key 已存在，添加计数器
+  let finalKey = baseKey;
+  let counter = 1;
+  
+  while (existingKeys.has(finalKey)) {
+    finalKey = `${baseKey}_${counter}`;
+    counter++;
+  }
+  
+  return finalKey;
 }
 
 export function deduplicateTexts(texts: string[]): string[] {
@@ -53,4 +96,5 @@ export function isSimilarText(text1: string, text2: string, threshold: number = 
   const similarity = intersection.size / union.size;
   return similarity >= threshold;
 }
+
 
