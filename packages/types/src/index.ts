@@ -1,4 +1,17 @@
 /**
+ * 自定义包裹函数生成器
+ * @param key - 翻译 key
+ * @param originalText - 原文
+ * @param interpolations - 插值表达式数组（用于模板字符串）
+ * @returns 生成的代码字符串
+ */
+export type WrapperGenerator = (
+  key: string,
+  originalText: string,
+  interpolations?: string[]
+) => string;
+
+/**
  * 导入配置 - 支持全局导入和上下文注入
  */
 export interface ImportConfig {
@@ -15,15 +28,27 @@ export interface ImportConfig {
   /**
    * 静态文件的导入语句（用于非 React 组件的纯 JS/TS 文件）
    * 例如: "import i18n from '@/i18n';"
-   * 静态文件会使用 i18n.t() 而不是 useTranslation hook
+   * 或: "import { getLocal } from '@/utils/local';"
    */
   staticFileImport?: string;
   /**
    * 静态文件中使用的翻译函数
-   * 例如: "i18n.t" 会生成 i18n.t("key")
-   * 默认: "i18n.t"
+   * 支持三种格式：
+   * 1. 简单函数名: "i18n.t" -> i18n.t("key")
+   * 2. 模板字符串: "getLocal('{{key}}', '{{text}}')" -> getLocal('key', '原文')
+   * 3. 函数生成器: (key, text) => `getLocal('${key}', '${text}')`
+   * 
+   * 模板变量:
+   * - {{key}}: 翻译 key
+   * - {{text}}: 原文
+   * - {{0}}, {{1}}, ...: 插值表达式（用于模板字符串）
    */
-  staticFileWrapper?: string;
+  staticFileWrapper?: string | WrapperGenerator;
+  /**
+   * React 组件中使用的翻译函数（可选，默认使用 wrapperFunction）
+   * 支持与 staticFileWrapper 相同的格式
+   */
+  componentWrapper?: string | WrapperGenerator;
 }
 
 export interface TransformConfig {

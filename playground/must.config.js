@@ -31,10 +31,14 @@ const config = {
       global: "import { useTranslation } from 'react-i18next';",
       // React 组件：上下文注入语句
       contextInjection: "const { t } = useTranslation();",
-      // 静态文件：导入 i18n 实例
-      staticFileImport: "import i18n from './i18n';",
-      // 静态文件：使用 i18n.t() 包裹
-      staticFileWrapper: "i18n.t"
+      // 静态文件：导入自定义国际化函数
+      staticFileImport: "import { getLocal } from './utils/local';",
+      // 静态文件：使用模板格式包裹
+      // 支持三种格式：
+      // 1. 简单函数名: "i18n.t" -> i18n.t("key")
+      // 2. 模板字符串: "getLocal('{{key}}', '{{text}}')" -> getLocal('key', '原文')
+      // 3. 函数生成器: (key, text) => `getLocal('${key}', '${text}')`
+      staticFileWrapper: "getLocal('{{key}}', '{{text}}')"
     },
     wrapperFunction: 't',
     formatCode: true,  // 格式化代码

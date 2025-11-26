@@ -1,6 +1,6 @@
 import * as parser from '@babel/parser';
 import * as t from '@babel/types';
-import { I18nConfig, ImportConfig } from '@must/types';
+import { I18nConfig, ImportConfig, WrapperGenerator } from '@must/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -53,8 +53,70 @@ export class CodeTransformer {
       global: importStatement.global || "import { useTranslation } from 'react-i18next';",
       contextInjection: importStatement.contextInjection || "const { t } = useTranslation();",
       staticFileImport: importStatement.staticFileImport || "import i18n from '@/i18n';",
-      staticFileWrapper: importStatement.staticFileWrapper || "i18n.t"
+      staticFileWrapper: importStatement.staticFileWrapper || "i18n.t",
+      componentWrapper: importStatement.componentWrapper
     };
+  }
+
+  /**
+   * 检查包裹器是否为模板字符串格式（包含 {{key}} 或 {{text}}）
+   */
+  private isTemplateWrapper(wrapper: string | WrapperGenerator | undefined): boolean {
+    if (typeof wrapper === 'string') {
+      return wrapper.includes('{{key}}') || wrapper.includes('{{text}}');
+    }
+    return typeof wrapper === 'function';
+  }
+
+  /**
+   * 使用模板或函数生成包裹代码
+   */
+  private generateWrapperCode(
+    wrapper: string | WrapperGenerator,
+    key: string,
+    originalText: string,
+    interpolations?: string[]
+  ): string {
+    if (typeof wrapper === 'function') {
+      return wrapper(key, originalText, interpolations);
+    }
+
+    // 模板字符串格式
+    let result = wrapper
+      .replace(/\{\{key\}\}/g, key)
+      .replace(/\{\{text\}\}/g, originalText);
+
+    // 替换插值占位符
+    if (interpolations) {
+      interpolations.forEach((expr, index) => {
+        result = result.replace(new RegExp(`\\{\\{${index}\\}\\}`, 'g'), expr);
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * 解析模板生成的代码为 AST 表达式
+   */
+  private parseWrapperToAST(wrapperCode: string): any {
+    try {
+      const ast = parser.parse(wrapperCode, {
+        sourceType: 'module',
+        plugins: ['typescript', 'jsx']
+      });
+      
+      // 获取表达式
+      const stmt = ast.program.body[0];
+      if (t.isExpressionStatement(stmt)) {
+        // 深度克隆表达式，避免引用问题
+        return t.cloneNode(stmt.expression, true);
+      }
+      return null;
+    } catch (error) {
+      console.warn('Failed to parse wrapper code:', wrapperCode, error);
+      return null;
+    }
   }
 
   /**
@@ -133,10 +195,16 @@ export class CodeTransformer {
       const translations = new Map<string, string>();
       const importConfig = this.parseImportConfig();
       
-      // 根据文件类型选择不同的包裹函数
-      const wrapperFunction = isStatic 
+      // 根据文件类型选择不同的包裹配置
+      // 静态文件使用 staticFileWrapper，React 组件使用 componentWrapper 或 wrapperFunction
+      const wrapperConfig: string | WrapperGenerator = isStatic 
         ? (importConfig.staticFileWrapper || 'i18n.t')
-        : (this.config.transform.wrapperFunction || 't');
+        : (importConfig.componentWrapper || this.config.transform.wrapperFunction || 't');
+
+      // 简单函数名（用于检测解构等）
+      const simpleWrapperFunction = typeof wrapperConfig === 'string' && !this.isTemplateWrapper(wrapperConfig)
+        ? wrapperConfig.split('.').pop() || 't'
+        : 't';
 
       let hasI18nImport = false;
       // 记录需要注入上下文的函数/组件
@@ -177,7 +245,7 @@ export class CodeTransformer {
 
                 if (funcParent) {
                   // 检查解构中是否已经有 t
-                  const hasT = this.checkHasDestructuredProperty(decl.id, wrapperFunction);
+                  const hasT = this.checkHasDestructuredProperty(decl.id, simpleWrapperFunction);
 
                   if (hasT) {
                     // 已经有完整的注入
@@ -207,7 +275,7 @@ export class CodeTransformer {
         JSXElement: (nodePath: any) => {
           if (processedJSXElements.has(nodePath.node)) return;
 
-          const result = this.tryMergeJSXChildren(nodePath, wrapperFunction);
+          const result = this.tryMergeJSXChildren(nodePath, simpleWrapperFunction);
           if (result) {
             const { mergedText, expressions } = result;
             const key = this.keyMap.get(mergedText);
@@ -230,10 +298,11 @@ export class CodeTransformer {
                 : undefined;
 
               const callExpression = this.createTCallWithComment(
-                wrapperFunction,
+                wrapperConfig,
                 key,
                 mergedText,
-                interpolationObj
+                interpolationObj,
+                expressions
               );
 
               // 替换所有子元素为单个 {t(...)}
@@ -254,7 +323,7 @@ export class CodeTransformer {
             this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
             // 使用 t(key /* 原文 */) 替换
-            const callExpression = this.createTCallWithComment(wrapperFunction, key, text);
+            const callExpression = this.createTCallWithComment(wrapperConfig, key, text);
 
             // 如果是 JSX 属性值，需要包裹在 JSXExpressionContainer 中
             if (nodePath.parent && t.isJSXAttribute(nodePath.parent)) {
@@ -262,6 +331,8 @@ export class CodeTransformer {
             } else {
               nodePath.replaceWith(callExpression);
             }
+            // 跳过替换后的节点，避免重复处理
+            nodePath.skip();
             modified = true;
           }
         },
@@ -308,13 +379,15 @@ export class CodeTransformer {
             : undefined;
 
           const callExpression = this.createTCallWithComment(
-            wrapperFunction, 
+            wrapperConfig, 
             key, 
             fullText.trim(),
-            interpolationObj
+            interpolationObj,
+            expressions
           );
 
           nodePath.replaceWith(callExpression);
+          nodePath.skip();
           modified = true;
         },
         // 处理 JSX 文本
@@ -330,9 +403,10 @@ export class CodeTransformer {
             this.markFunctionForInjection(nodePath, functionsNeedingInjection);
 
             // JSX 中需要用 {t(key /* 原文 */)} 包裹
-            const callExpression = this.createTCallWithComment(wrapperFunction, key, text);
+            const callExpression = this.createTCallWithComment(wrapperConfig, key, text);
             const jsxExpression = t.jsxExpressionContainer(callExpression);
             nodePath.replaceWith(jsxExpression);
+            nodePath.skip();
             modified = true;
           }
         },
@@ -380,10 +454,11 @@ export class CodeTransformer {
             : undefined;
 
           const callExpression = this.createTCallWithComment(
-            wrapperFunction,
+            wrapperConfig,
             key,
             fullText.trim(),
-            interpolationObj
+            interpolationObj,
+            expressions
           );
 
           nodePath.node.expression = callExpression;
@@ -405,11 +480,10 @@ export class CodeTransformer {
           }
 
           // 更新已有的 useTranslation 调用，添加缺少的 t
-          const reactWrapperFunction = this.config.transform.wrapperFunction || 't';
           for (const { nodePath, funcNode } of useTranslationDeclarationsToUpdate) {
             // 只有当这个函数需要注入时才更新
             if (functionsNeedingInjection.has(funcNode)) {
-              this.updateUseTranslationDestructure(nodePath, reactWrapperFunction);
+              this.updateUseTranslationDestructure(nodePath, simpleWrapperFunction);
             }
           }
 
@@ -463,19 +537,50 @@ export class CodeTransformer {
   }
 
   /**
-   * 创建带原文注释的 t() 调用
-   * 生成: t("key", \/\* 原文 \*\/) 或 i18n.t("key", \/\* 原文 \*\/)
+   * 创建翻译函数调用
+   * 支持多种格式：
+   * 1. 简单函数: t("key") 或 i18n.t("key")
+   * 2. 模板格式: getLocal('{{key}}', '{{text}}') -> getLocal('key', '原文')
+   * 3. 函数生成器: 自定义函数
    */
   private createTCallWithComment(
-    wrapperFunction: string,
+    wrapperConfig: string | WrapperGenerator,
     key: string,
     originalText: string,
-    interpolationArgs?: any
+    interpolationArgs?: any,
+    interpolationExpressions?: any[]
   ): any {
+    // 检查是否为模板或函数格式
+    if (this.isTemplateWrapper(wrapperConfig)) {
+      // 生成插值表达式的代码字符串
+      const interpolations = interpolationExpressions?.map(expr => {
+        const { code } = generate(expr, { compact: true });
+        return code;
+      });
+
+      // 使用模板生成代码
+      const wrapperCode = this.generateWrapperCode(
+        wrapperConfig as string | WrapperGenerator,
+        key,
+        originalText,
+        interpolations
+      );
+
+      // 解析为 AST
+      const astExpr = this.parseWrapperToAST(wrapperCode);
+      if (astExpr) {
+        return astExpr;
+      }
+      
+      // 如果解析失败，回退到简单模式
+      console.warn('Failed to parse wrapper, falling back to simple mode');
+    }
+
+    // 简单函数格式: t 或 i18n.t
+    const wrapperFunction = typeof wrapperConfig === 'string' ? wrapperConfig : 't';
     const keyLiteral = t.stringLiteral(key);
     
     // 添加尾部注释（原文）
-    // 截断过长的原文
     const maxCommentLength = 30;
     let commentText = originalText.replace(/\n/g, ' ').trim();
     if (commentText.length > maxCommentLength) {
@@ -485,17 +590,14 @@ export class CodeTransformer {
     t.addComment(keyLiteral, 'trailing', ` ${commentText} `, false);
 
     // 构建调用表达式的 callee
-    // 支持 "t" 或 "i18n.t" 这种形式
     let callee: any;
     if (wrapperFunction.includes('.')) {
-      // 成员表达式，如 i18n.t
       const parts = wrapperFunction.split('.');
       callee = t.memberExpression(
         t.identifier(parts[0]),
         t.identifier(parts[1])
       );
     } else {
-      // 简单标识符，如 t
       callee = t.identifier(wrapperFunction);
     }
 
