@@ -132,7 +132,8 @@ export class AutoI18n {
           translatedForKey,
           this.config.appName,
           this.config.keyStyle || 'dot',
-          this.existingKeys
+          this.existingKeys,
+          this.config.keyMaxLength || 50
         );
         this.existingKeys.add(key);
       }
@@ -262,7 +263,7 @@ export class AutoI18n {
     for (const file of files) {
       try {
         const code = fs.readFileSync(file, 'utf-8');
-        const result = transformer.transform(code, file);
+        const result = await transformer.transform(code, file);
 
         if (result.modified) {
           fs.writeFileSync(file, result.code, 'utf-8');

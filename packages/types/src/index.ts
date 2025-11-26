@@ -2,6 +2,7 @@ export interface TransformConfig {
   enabled?: boolean;  // 是否启用自动转换
   importStatement?: string;  // 自定义 import 语句
   wrapperFunction?: string;  // 包裹函数名，默认 't'
+  formatCode?: boolean;  // 是否格式化代码，默认 true
   // 自定义转换函数
   customTransform?: (params: {
     text: string;
@@ -25,6 +26,7 @@ export interface I18nConfig {
   customTranslator?: string;
   patchDir?: string;  // patch 目录，用于存储增量翻译
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
+  keyMaxLength?: number;  // key 最大长度，默认 50
   transform?: TransformConfig;  // 代码转换配置
 }
 

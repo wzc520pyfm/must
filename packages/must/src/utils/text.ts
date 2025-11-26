@@ -5,8 +5,8 @@ export function normalizeText(text: string): string {
 /**
  * 将文本转换为驼峰命名
  */
-function toCamelCase(text: string): string {
-  return text
+function toCamelCase(text: string, maxLength?: number): string {
+  const result = text
     .replace(/[^\w\s]/g, '') // 移除特殊字符
     .split(/\s+/)
     .map((word, index) => {
@@ -16,6 +16,33 @@ function toCamelCase(text: string): string {
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join('');
+  
+  // 如果有最大长度限制，智能截断
+  if (maxLength && result.length > maxLength) {
+    return smartTruncate(result, maxLength);
+  }
+  
+  return result;
+}
+
+/**
+ * 智能截断：在驼峰边界处截断，保持可读性
+ */
+function smartTruncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  
+  // 找到最接近 maxLength 的驼峰边界
+  let truncateAt = maxLength;
+  
+  // 从 maxLength 往前找大写字母（驼峰边界）
+  for (let i = maxLength; i > maxLength * 0.6; i--) {
+    if (text[i] && text[i] === text[i].toUpperCase() && /[A-Z]/.test(text[i])) {
+      truncateAt = i;
+      break;
+    }
+  }
+  
+  return text.substring(0, truncateAt);
 }
 
 /**
@@ -34,7 +61,7 @@ function generatePathPart(filePath: string): string {
 /**
  * 生成唯一的 i18n key
  * 使用英文翻译作为 key 的一部分
- * 格式: {appName}.{filePath}.{translatedKey}[_{counter}]
+ * 格式: {appName}.{filePath}.{translatedKey}[.counter]
  */
 export function generateKey(
   text: string,
@@ -42,7 +69,8 @@ export function generateKey(
   translatedText: string,  // 英文翻译
   appName?: string,
   keyStyle: 'dot' | 'underscore' = 'dot',
-  existingKeys: Set<string> = new Set()
+  existingKeys: Set<string> = new Set(),
+  maxKeyLength: number = 50  // 默认最大长度 50
 ): string {
   const separator = keyStyle === 'dot' ? '.' : '_';
   const parts: string[] = [];
@@ -62,13 +90,19 @@ export function generateKey(
     }
   }
   
-  // 使用英文翻译生成 key 的最后部分
-  const translatedKey = toCamelCase(translatedText);
+  // 计算前缀长度（appName + filePath + 分隔符）
+  const prefixLength = parts.join(separator).length + (parts.length > 0 ? 1 : 0);
+  
+  // 计算翻译部分可用的最大长度
+  const availableLength = Math.max(maxKeyLength - prefixLength, 15);
+  
+  // 使用英文翻译生成 key 的最后部分（应用长度限制）
+  const translatedKey = toCamelCase(translatedText, availableLength);
   if (translatedKey) {
     parts.push(translatedKey);
   } else {
     // 如果翻译为空，使用原文
-    parts.push(toCamelCase(text));
+    parts.push(toCamelCase(text, availableLength));
   }
   
   // 生成基础 key

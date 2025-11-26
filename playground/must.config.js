@@ -13,6 +13,7 @@ const config = {
   outputDir: 'src/i18n',
   patchDir: 'src/i18n/patches',  // patch 目录
   keyStyle: 'dot',  // 使用点分隔的 key 风格
+  keyMaxLength: 50,  // key 最大长度
   inputPatterns: [
     'src/**/*.{ts,tsx}'
   ],
@@ -26,6 +27,7 @@ const config = {
     enabled: true,  // 开启自动转换
     importStatement: "import { useTranslation } from 'react-i18next';",
     wrapperFunction: 't',
+    formatCode: true,  // 格式化代码
   }
 };
 
