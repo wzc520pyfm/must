@@ -2,11 +2,12 @@ import { BaseExtractor, ExtractorConfig } from './base';
 import { JavaScriptExtractor } from './javascript';
 import { VueExtractor } from './vue';
 import { HTMLExtractor } from './html';
-import { ExtractedText, ExtractorOptions } from '@must/types';
+import { ExtractedText, ExtractorOptions, InterpolationConfig } from '@must/types';
 
 export interface TextExtractorConfig {
   options?: ExtractorOptions;
   sourceLanguage?: string;  // 源语言，用于过滤文本
+  interpolation?: InterpolationConfig;  // 插值配置
 }
 
 export class TextExtractor {
@@ -15,7 +16,8 @@ export class TextExtractor {
   constructor(config: TextExtractorConfig = {}) {
     const extractorConfig: ExtractorConfig = {
       options: config.options,
-      sourceLanguage: config.sourceLanguage
+      sourceLanguage: config.sourceLanguage,
+      interpolation: config.interpolation
     };
     
     this.extractors.set('js', new JavaScriptExtractor(extractorConfig));

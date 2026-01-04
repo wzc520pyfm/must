@@ -71,20 +71,28 @@ export class VueExtractor extends BaseExtractor {
         },
         TemplateLiteral: (path: any) => {
           if (this.options.includeTemplateLiterals) {
-            path.node.quasis.forEach((quasi: any) => {
-              const { value, loc } = quasi;
-              if (this.isValidText(value.raw)) {
-                extractedTexts.push(
-                  this.createExtractedText(
-                    value.raw,
-                    filePath,
-                    loc?.start.line || 0,
-                    loc?.start.column || 0,
-                    'vue'
-                  )
-                );
+            const { quasis, expressions, loc } = path.node;
+            
+            // 构建完整的模板字符串，用可配置的占位符格式替代表达式
+            let fullTemplate = '';
+            quasis.forEach((quasi: any, index: number) => {
+              fullTemplate += quasi.value.raw;
+              if (index < expressions.length) {
+                fullTemplate += this.formatPlaceholder(index);
               }
             });
+            
+            if (this.isValidText(fullTemplate)) {
+              extractedTexts.push(
+                this.createExtractedText(
+                  fullTemplate,
+                  filePath,
+                  loc?.start.line || 0,
+                  loc?.start.column || 0,
+                  'vue'
+                )
+              );
+            }
           }
         }
       });

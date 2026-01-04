@@ -69,12 +69,12 @@ export class JavaScriptExtractor extends BaseExtractor {
           if (this.options.includeTemplateLiterals) {
             const { quasis, expressions, loc } = path.node;
             
-            // 构建完整的模板字符串，用 {{index}} 替代表达式占位符
+            // 构建完整的模板字符串，用可配置的占位符格式替代表达式
             let fullTemplate = '';
             quasis.forEach((quasi: any, index: number) => {
               fullTemplate += quasi.value.raw;
               if (index < expressions.length) {
-                fullTemplate += `{{${index}}}`;
+                fullTemplate += this.formatPlaceholder(index);
               }
             });
             
@@ -198,7 +198,7 @@ export class JavaScriptExtractor extends BaseExtractor {
             return null; // 已经被翻译过，不需要再处理
           }
         }
-        result += `{{${expressionIndex}}}`;
+        result += this.formatPlaceholder(expressionIndex);
         expressionIndex++;
       }
     }

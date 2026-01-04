@@ -86,6 +86,7 @@ export interface I18nConfig {
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
   keyMaxLength?: number;  // key 最大长度，默认 50
   transform?: TransformConfig;  // 代码转换配置
+  interpolation?: InterpolationConfig;  // 插值配置
 }
 
 export interface ExtractedText {
@@ -122,5 +123,55 @@ export interface TranslatorOptions {
   apiSecret?: string;
   region?: string;
   customEndpoint?: string;
+}
+
+/**
+ * 插值配置 - 定义如何处理模板字符串中的动态表达式
+ */
+export interface InterpolationConfig {
+  /**
+   * 占位符前缀
+   * @default '{{'
+   */
+  prefix?: string;
+
+  /**
+   * 占位符后缀
+   * @default '}}'
+   */
+  suffix?: string;
+
+  /**
+   * 自定义占位符生成函数
+   * 如果提供，将忽略 prefix/suffix，完全由函数控制格式
+   * @param index 占位符索引 (0, 1, 2, ...)
+   * @returns 占位符字符串，如 '{{0}}', '${0}', '<ph id="0"/>'
+   */
+  format?: (index: number) => string;
+
+  /**
+   * 翻译时使用的占位符格式
+   * 某些翻译 API 会修改特定格式的文本，可以指定一个"安全"的格式
+   * 翻译完成后会自动转换回标准格式
+   * 
+   * 支持的格式：
+   * - 'xml': 使用 <ph id="N"/> 格式（大多数翻译 API 会保留 XML 标签）
+   * - 'bracket': 使用 [N] 格式
+   * - 'custom': 使用 translationPrefix/translationSuffix 自定义格式
+   * - null: 不转换，直接使用原格式
+   * 
+   * @default null (不转换)
+   */
+  translationFormat?: 'xml' | 'bracket' | 'custom' | null;
+
+  /**
+   * 翻译时使用的自定义前缀（当 translationFormat 为 'custom' 时生效）
+   */
+  translationPrefix?: string;
+
+  /**
+   * 翻译时使用的自定义后缀（当 translationFormat 为 'custom' 时生效）
+   */
+  translationSuffix?: string;
 }
 

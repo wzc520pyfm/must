@@ -1,4 +1,4 @@
-import { BaseTranslator } from './base';
+import { BaseTranslator, TranslatorConfig } from './base';
 import { GoogleTranslator } from './google';
 import { BaiduTranslator } from './baidu';
 import { AzureTranslator } from './azure';
@@ -12,11 +12,12 @@ export class TranslationManager {
   }
 
   private createTranslator(config: I18nConfig): BaseTranslator {
-    const options: TranslatorOptions = {
+    const options: TranslatorConfig = {
       apiKey: config.apiKey,
       apiSecret: config.apiSecret,
       region: config.region,
-      customEndpoint: config.customTranslator
+      customEndpoint: config.customTranslator,
+      interpolation: config.interpolation
     };
 
     switch (config.translationProvider) {

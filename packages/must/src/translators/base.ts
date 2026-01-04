@@ -1,10 +1,18 @@
-import { TranslationResult, TranslatorOptions } from '@must/types';
+import { TranslationResult, TranslatorOptions, InterpolationConfig } from '@must/types';
+import { InterpolationHandler, createInterpolationHandler } from '../utils/interpolation';
+
+export interface TranslatorConfig extends TranslatorOptions {
+  interpolation?: InterpolationConfig;
+}
 
 export abstract class BaseTranslator {
   protected options: TranslatorOptions;
+  protected interpolation: InterpolationHandler;
 
-  constructor(options: TranslatorOptions = {}) {
-    this.options = options;
+  constructor(options: TranslatorConfig = {}) {
+    const { interpolation, ...translatorOptions } = options;
+    this.options = translatorOptions;
+    this.interpolation = createInterpolationHandler(interpolation);
   }
 
   abstract translate(
@@ -22,7 +30,15 @@ export abstract class BaseTranslator {
     
     for (const text of texts) {
       try {
-        const translatedText = await this.translate(text, sourceLanguage, targetLanguage);
+        // 将占位符转换为翻译安全格式
+        const textForTranslation = this.interpolation.convertToTranslationFormat(text);
+        
+        // 调用翻译 API
+        let translatedText = await this.translate(textForTranslation, sourceLanguage, targetLanguage);
+        
+        // 将翻译安全格式转换回标准格式
+        translatedText = this.interpolation.convertFromTranslationFormat(translatedText);
+        
         results.push({
           sourceText: text,
           translatedText,

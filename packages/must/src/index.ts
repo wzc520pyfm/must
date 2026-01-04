@@ -17,9 +17,10 @@ export class AutoI18n {
   constructor(config?: I18nConfig) {
     const configManager = new ConfigManager();
     this.config = config || configManager.getConfig();
-    // 传递源语言给提取器，用于过滤文本
+    // 传递源语言和插值配置给提取器
     this.extractor = new TextExtractor({
-      sourceLanguage: this.config.sourceLanguage
+      sourceLanguage: this.config.sourceLanguage,
+      interpolation: this.config.interpolation
     });
     this.translator = new TranslationManager(this.config);
     
@@ -327,6 +328,6 @@ export class AutoI18n {
 }
 
 export { ConfigManager, TextExtractor, TranslationManager };
-export type { I18nConfig, ExtractedText };
+export type { I18nConfig, ExtractedText, InterpolationConfig } from '@must/types';
 
 
