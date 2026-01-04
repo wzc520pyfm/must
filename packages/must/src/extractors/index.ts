@@ -2,7 +2,7 @@ import { BaseExtractor, ExtractorConfig, ExtractResult } from './base';
 import { JavaScriptExtractor } from './javascript';
 import { VueExtractor } from './vue';
 import { HTMLExtractor } from './html';
-import { ExtractedText, ExtractorOptions, InterpolationConfig, ExtractionWarning } from '@must/types';
+import { ExtractedText, ExtractorOptions, InterpolationConfig, ExtractionWarning } from '../types';
 
 export interface TextExtractorConfig {
   options?: ExtractorOptions;

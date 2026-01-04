@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { I18nConfig } from '@must/types';
+import { I18nConfig } from '../types';
 import { pathToFileURL } from 'url';
 
 const DEFAULT_CONFIG: Partial<I18nConfig> = {

@@ -3,7 +3,7 @@ import {
   CustomTranslatorConfig,
   CustomTranslateParams,
   CustomBatchTranslateParams
-} from '@must/types';
+} from '../types';
 import { BaseTranslator, TranslatorConfig } from './base';
 
 export interface CustomTranslatorOptions extends TranslatorConfig {

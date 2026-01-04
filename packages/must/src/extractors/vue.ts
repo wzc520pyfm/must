@@ -3,7 +3,7 @@ import { parse } from '@babel/parser';
 const traverse = require('@babel/traverse').default;
 import * as t from '@babel/types';
 import { BaseExtractor, ExtractorConfig } from './base';
-import { ExtractedText } from '@must/types';
+import { ExtractedText } from '../types';
 
 export class VueExtractor extends BaseExtractor {
   constructor(config: ExtractorConfig = {}) {

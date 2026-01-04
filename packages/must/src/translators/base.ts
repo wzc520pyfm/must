@@ -1,4 +1,4 @@
-import { TranslationResult, TranslatorOptions, InterpolationConfig } from '@must/types';
+import { TranslationResult, TranslatorOptions, InterpolationConfig } from '../types';
 import { InterpolationHandler, createInterpolationHandler } from '../utils/interpolation';
 
 export interface TranslatorConfig extends TranslatorOptions {

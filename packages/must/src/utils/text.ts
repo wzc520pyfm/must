@@ -1,4 +1,4 @@
-import { KeyConfig, KeyGeneratorParams } from '@must/types';
+import { KeyConfig, KeyGeneratorParams } from '../types';
 
 export function normalizeText(text: string): string {
   return text.trim().replace(/\s+/g, ' ');

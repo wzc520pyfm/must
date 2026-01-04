@@ -1,6 +1,6 @@
 import * as parser from '@babel/parser';
 import * as t from '@babel/types';
-import { I18nConfig, ImportConfig, WrapperGenerator } from '@must/types';
+import { I18nConfig, ImportConfig, WrapperGenerator } from '../types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { InterpolationHandler, createInterpolationHandler } from '../utils/interpolation';

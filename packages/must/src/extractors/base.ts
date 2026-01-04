@@ -1,4 +1,4 @@
-import { ExtractedText, ExtractorOptions, InterpolationConfig, ExtractionWarning, ExtractionWarningSeverity } from '@must/types';
+import { ExtractedText, ExtractorOptions, InterpolationConfig, ExtractionWarning, ExtractionWarningSeverity } from '../types';
 import { InterpolationHandler, createInterpolationHandler } from '../utils/interpolation';
 
 export interface ExtractorConfig {

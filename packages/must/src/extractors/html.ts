@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { JSDOM } from 'jsdom';
 import { BaseExtractor, ExtractorConfig } from './base';
-import { ExtractedText } from '@must/types';
+import { ExtractedText } from '../types';
 
 export class HTMLExtractor extends BaseExtractor {
   constructor(config: ExtractorConfig = {}) {

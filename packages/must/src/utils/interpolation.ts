@@ -1,4 +1,4 @@
-import { InterpolationConfig } from '@must/types';
+import { InterpolationConfig } from '../types';
 
 /**
  * 插值处理器 - 处理模板字符串中的动态表达式占位符

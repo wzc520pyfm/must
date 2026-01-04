@@ -3,7 +3,7 @@ import { parse } from '@babel/parser';
 const traverse = require('@babel/traverse').default;
 import * as t from '@babel/types';
 import { BaseExtractor, ExtractorConfig, ExtractResult } from './base';
-import { ExtractedText } from '@must/types';
+import { ExtractedText } from '../types';
 import generate from '@babel/generator';
 
 export class JavaScriptExtractor extends BaseExtractor {

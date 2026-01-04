@@ -4,7 +4,7 @@ import { TranslationManager } from './translators';
 import { CodeTransformer } from './transformer';
 import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile } from './utils/file';
 import { deduplicateTexts, generateKey } from './utils/text';
-import { I18nConfig, ExtractedText, ExtractionWarning } from '@must/types';
+import { I18nConfig, ExtractedText, ExtractionWarning } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -462,6 +462,24 @@ export class AutoI18n {
 }
 
 export { ConfigManager, TextExtractor, TranslationManager };
-export type { I18nConfig, ExtractedText, InterpolationConfig } from '@must/types';
+export type { 
+  I18nConfig, 
+  ExtractedText, 
+  InterpolationConfig,
+  TransformConfig,
+  ImportConfig,
+  KeyConfig,
+  KeyGeneratorParams,
+  WrapperGenerator,
+  ExtractionWarning,
+  ExtractionWarningSeverity,
+  TranslationResult,
+  CustomTranslatorConfig,
+  CustomTranslateParams,
+  CustomBatchTranslateParams,
+  CustomTranslateFunction,
+  ExtractorOptions,
+  TranslatorOptions
+} from './types';
 
 

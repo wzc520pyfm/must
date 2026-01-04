@@ -9,7 +9,15 @@
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "clean": "pnpm -r run clean && rm -rf node_modules",
-    "playground": "pnpm --filter playground run dev"
+    "playground": "pnpm --filter playground run dev",
+    "changelog": "changelogen --output CHANGELOG.md",
+    "version:patch": "pnpm -r --filter './packages/*' exec npm version patch --no-git-tag-version",
+    "version:minor": "pnpm -r --filter './packages/*' exec npm version minor --no-git-tag-version",
+    "version:major": "pnpm -r --filter './packages/*' exec npm version major --no-git-tag-version",
+    "release:patch": "pnpm version:patch && pnpm changelog && pnpm build",
+    "release:minor": "pnpm version:minor && pnpm changelog && pnpm build",
+    "release:major": "pnpm version:major && pnpm changelog && pnpm build",
+    "publish": "cd packages/must && npm publish"
   },
   "keywords": [
     "i18n",
@@ -23,6 +31,7 @@
     "@types/node": "^20.10.5",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
+    "changelogen": "^0.6.2",
     "eslint": "^8.55.0",
     "typescript": "^5.3.3"
   },

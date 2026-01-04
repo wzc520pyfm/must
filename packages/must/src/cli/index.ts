@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { AutoI18n } from '../index';
 import { ConfigManager, createDefaultConfig } from '../config';
-import { I18nConfig } from '@must/types';
+import { I18nConfig } from '../types';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';

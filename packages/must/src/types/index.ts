@@ -260,14 +260,14 @@ export type ExtractionWarningSeverity = 'warning' | 'error' | 'info';
 export interface ExtractionWarning {
   /** 警告类型 */
   type:
-  | 'complex-expression'      // 复杂表达式，无法提取变量名
-  | 'nested-template'         // 嵌套模板字符串
-  | 'conditional-expression'  // 条件表达式
-  | 'function-call'           // 函数调用
-  | 'too-many-interpolations' // 过多插值
-  | 'dynamic-text'            // 动态文本（无法静态分析）
-  | 'binary-expression'       // 二元表达式
-  | 'parse-error';            // 解析错误
+    | 'complex-expression'      // 复杂表达式，无法提取变量名
+    | 'nested-template'         // 嵌套模板字符串
+    | 'conditional-expression'  // 条件表达式
+    | 'function-call'           // 函数调用
+    | 'too-many-interpolations' // 过多插值
+    | 'dynamic-text'            // 动态文本（无法静态分析）
+    | 'binary-expression'       // 二元表达式
+    | 'parse-error';            // 解析错误
 
   /** 严重程度 */
   severity: ExtractionWarningSeverity;

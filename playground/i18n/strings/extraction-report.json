@@ -1,0 +1,310 @@
+{
+  "summary": {
+    "totalFiles": 3,
+    "totalTexts": 42,
+    "uniqueTexts": 42
+  },
+  "byFile": {
+    "src/App.tsx": [
+      {
+        "text": "中文",
+        "file": "src/App.tsx",
+        "line": 21,
+        "column": 11,
+        "type": "jsx"
+      },
+      {
+        "text": "日本語",
+        "file": "src/App.tsx",
+        "line": 33,
+        "column": 11,
+        "type": "jsx"
+      },
+      {
+        "text": "欢迎使用 Must 国际化工具",
+        "file": "src/App.tsx",
+        "line": 37,
+        "column": 12,
+        "type": "jsx"
+      },
+      {
+        "text": "这是一个自动化的国际化解决方案，支持多语言文案提取与翻译。",
+        "file": "src/App.tsx",
+        "line": 38,
+        "column": 11,
+        "type": "jsx"
+      },
+      {
+        "text": "计数器示例",
+        "file": "src/App.tsx",
+        "line": 43,
+        "column": 14,
+        "type": "jsx"
+      },
+      {
+        "text": "当前计数：{{0}}",
+        "file": "src/App.tsx",
+        "line": 44,
+        "column": 10,
+        "type": "jsx"
+      },
+      {
+        "text": "增加计数",
+        "file": "src/App.tsx",
+        "line": 45,
+        "column": 54,
+        "type": "jsx"
+      },
+      {
+        "text": "重置计数",
+        "file": "src/App.tsx",
+        "line": 46,
+        "column": 46,
+        "type": "jsx"
+      },
+      {
+        "text": "核心功能",
+        "file": "src/App.tsx",
+        "line": 50,
+        "column": 14,
+        "type": "jsx"
+      },
+      {
+        "text": "自动提取",
+        "file": "src/App.tsx",
+        "line": 53,
+        "column": 18,
+        "type": "jsx"
+      },
+      {
+        "text": "自动从代码中提取所有文案",
+        "file": "src/App.tsx",
+        "line": 54,
+        "column": 17,
+        "type": "jsx"
+      },
+      {
+        "text": "智能翻译",
+        "file": "src/App.tsx",
+        "line": 57,
+        "column": 18,
+        "type": "jsx"
+      },
+      {
+        "text": "支持多种翻译服务商，一键翻译多语言",
+        "file": "src/App.tsx",
+        "line": 58,
+        "column": 17,
+        "type": "jsx"
+      },
+      {
+        "text": "简单易用",
+        "file": "src/App.tsx",
+        "line": 61,
+        "column": 18,
+        "type": "jsx"
+      },
+      {
+        "text": "通过简单的命令行工具快速集成",
+        "file": "src/App.tsx",
+        "line": 62,
+        "column": 17,
+        "type": "jsx"
+      },
+      {
+        "text": "使用方法",
+        "file": "src/App.tsx",
+        "line": 68,
+        "column": 14,
+        "type": "jsx"
+      },
+      {
+        "text": "在项目根目录运行",
+        "file": "src/App.tsx",
+        "line": 70,
+        "column": 16,
+        "type": "jsx"
+      },
+      {
+        "text": "命令",
+        "file": "src/App.tsx",
+        "line": 71,
+        "column": 45,
+        "type": "jsx"
+      },
+      {
+        "text": "查看生成的",
+        "file": "src/App.tsx",
+        "line": 73,
+        "column": 16,
+        "type": "jsx"
+      },
+      {
+        "text": "目录",
+        "file": "src/App.tsx",
+        "line": 74,
+        "column": 41,
+        "type": "jsx"
+      },
+      {
+        "text": "检查提取的文案和翻译结果",
+        "file": "src/App.tsx",
+        "line": 76,
+        "column": 16,
+        "type": "jsx"
+      },
+      {
+        "text": "张三",
+        "file": "src/App.tsx",
+        "line": 80,
+        "column": 33,
+        "type": "string"
+      },
+      {
+        "text": "基于 React 和 Vite 构建",
+        "file": "src/App.tsx",
+        "line": 84,
+        "column": 11,
+        "type": "jsx"
+      },
+      {
+        "text": "由 Must 提供技术支持 - 智能国际化工具",
+        "file": "src/App.tsx",
+        "line": 85,
+        "column": 11,
+        "type": "jsx"
+      }
+    ],
+    "src/constants/index.ts": [
+      {
+        "text": "王志超",
+        "file": "src/constants/index.ts",
+        "line": 1,
+        "column": 22,
+        "type": "string"
+      },
+      {
+        "text": "王志超2",
+        "file": "src/constants/index.ts",
+        "line": 3,
+        "column": 23,
+        "type": "string"
+      }
+    ],
+    "src/components/UserProfile.tsx": [
+      {
+        "text": "访客",
+        "file": "src/components/UserProfile.tsx",
+        "line": 9,
+        "column": 50,
+        "type": "string"
+      },
+      {
+        "text": "用户信息",
+        "file": "src/components/UserProfile.tsx",
+        "line": 27,
+        "column": 10,
+        "type": "jsx"
+      },
+      {
+        "text": "欢迎回来，{{0}}！{{1}} {{2}}",
+        "file": "src/components/UserProfile.tsx",
+        "line": 31,
+        "column": 10,
+        "type": "jsx"
+      },
+      {
+        "text": "当前等级：{{0}} 级",
+        "file": "src/components/UserProfile.tsx",
+        "line": 32,
+        "column": 10,
+        "type": "jsx"
+      },
+      {
+        "text": "用户名",
+        "file": "src/components/UserProfile.tsx",
+        "line": 37,
+        "column": 41,
+        "type": "jsx"
+      },
+      {
+        "text": "请输入用户名",
+        "file": "src/components/UserProfile.tsx",
+        "line": 42,
+        "column": 26,
+        "type": "string"
+      },
+      {
+        "text": "年龄",
+        "file": "src/components/UserProfile.tsx",
+        "line": 47,
+        "column": 41,
+        "type": "jsx"
+      },
+      {
+        "text": "积分",
+        "file": "src/components/UserProfile.tsx",
+        "line": 57,
+        "column": 41,
+        "type": "jsx"
+      },
+      {
+        "text": "{{0}} 今年 {{1}} 岁，拥有 {{2}} 积分",
+        "file": "src/components/UserProfile.tsx",
+        "line": 63,
+        "column": 10,
+        "type": "jsx"
+      },
+      {
+        "text": "距离下一等级还需要 {{0}} 积分",
+        "file": "src/components/UserProfile.tsx",
+        "line": 66,
+        "column": 14,
+        "context": "{\"paramNames\":[\"p0\"],\"hasComplexExpression\":true}",
+        "type": "template"
+      },
+      {
+        "text": "尊贵的VIP会员",
+        "file": "src/components/UserProfile.tsx",
+        "line": 67,
+        "column": 54,
+        "type": "jsx"
+      },
+      {
+        "text": "获取 50 积分",
+        "file": "src/components/UserProfile.tsx",
+        "line": 71,
+        "column": 48,
+        "type": "jsx"
+      },
+      {
+        "text": "升级（消耗 100 积分）",
+        "file": "src/components/UserProfile.tsx",
+        "line": 72,
+        "column": 65,
+        "type": "jsx"
+      },
+      {
+        "text": "系统消息：您有 3 条未读消息",
+        "file": "src/components/UserProfile.tsx",
+        "line": 78,
+        "column": 13,
+        "type": "jsx"
+      },
+      {
+        "text": "最近登录：今天 10:30",
+        "file": "src/components/UserProfile.tsx",
+        "line": 79,
+        "column": 13,
+        "type": "jsx"
+      },
+      {
+        "text": "账户状态：正常",
+        "file": "src/components/UserProfile.tsx",
+        "line": 80,
+        "column": 13,
+        "type": "jsx"
+      }
+    ]
+  }
+}

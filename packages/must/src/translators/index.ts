@@ -3,7 +3,7 @@ import { GoogleTranslator } from './google';
 import { BaiduTranslator } from './baidu';
 import { AzureTranslator } from './azure';
 import { CustomTranslator } from './custom';
-import { I18nConfig, TranslatorOptions } from '@must/types';
+import { I18nConfig, TranslatorOptions } from '../types';
 
 export class TranslationManager {
   private translator: BaseTranslator;
