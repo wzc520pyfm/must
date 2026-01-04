@@ -42,10 +42,11 @@ const config = {
       
       // 统一包裹函数 - 所有文件都使用这个
       // 使用模板格式：trans('key', '原文')
-      wrapper: "trans('{{key}}', '{{text}}')",
+      // wrapper: "trans('{{key}}', '{{text}}')",
       
       // 也可以使用函数生成器：
       // wrapper: (key, text) => `trans('${key}', '${text}')`,
+      wrapper: (key, text) => `trans('${key}' /** ${text} */)`,
     },
     formatCode: true,
   }
