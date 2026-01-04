@@ -22,6 +22,29 @@ const config = {
     'dist/**',
     'src/i18n/**'
   ],
+  
+  // 插值配置：定义模板字符串中动态表达式的占位符格式
+  interpolation: {
+    // 占位符前后缀（默认 '{{' 和 '}}'）
+    prefix: '{{',
+    suffix: '}}',
+    
+    // 翻译时使用的安全格式，避免翻译 API 破坏占位符
+    // 可选值：
+    // - 'xml': 使用 <ph id="N"/> 格式（推荐，大多数翻译 API 会保留 XML 标签）
+    // - 'bracket': 使用 [N] 格式
+    // - 'custom': 使用自定义 translationPrefix/translationSuffix
+    // - null: 不转换（如果翻译 API 不会破坏占位符）
+    translationFormat: 'xml',
+    
+    // 自定义格式的前后缀（当 translationFormat 为 'custom' 时生效）
+    // translationPrefix: '__PH',
+    // translationSuffix: '__',
+    
+    // 或者使用函数完全自定义占位符格式
+    // format: (index) => `\${${index}}`,  // 生成 ${0}, ${1}, ...
+  },
+
   // 代码转换配置
   transform: {
     enabled: true,  // 开启自动转换
