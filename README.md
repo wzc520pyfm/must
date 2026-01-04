@@ -16,13 +16,13 @@
 
 ```bash
 # 使用 npm
-npm install must -D
+npm install must-cli -D
 
 # 使用 pnpm
-pnpm add must -D
+pnpm add must-cli -D
 
 # 使用 yarn
-yarn add must -D
+yarn add must-cli -D
 ```
 
 ## 🚀 快速开始
@@ -36,7 +36,7 @@ npx must init
 或手动创建 `must.config.js`：
 
 ```javascript
-/** @type {import('must').I18nConfig} */
+/** @type {import('must-cli').I18nConfig} */
 module.exports = {
   appName: 'myapp',
   sourceLanguage: 'zh-CN',
@@ -139,7 +139,7 @@ must validate [options]
 // must.config.js
 require('dotenv').config();
 
-/** @type {import('must').I18nConfig} */
+/** @type {import('must-cli').I18nConfig} */
 module.exports = {
   // ==================== 基础配置 ====================
   
