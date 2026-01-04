@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.7.0...main
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.7.0...main)
+
+### 🏡 Chore
+
+- Enhance release scripts to include publishing step for all release types, ensuring streamlined deployment ([4c55f32](https://github.com/wzc520pyfm/must/commit/4c55f32))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.1.1...main
 
 [compare changes](https://github.com/wzc520pyfm/must/compare/v1.1.1...main)
