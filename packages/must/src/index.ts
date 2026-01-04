@@ -4,7 +4,7 @@ import { TranslationManager } from './translators';
 import { CodeTransformer } from './transformer';
 import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile } from './utils/file';
 import { deduplicateTexts, generateKey } from './utils/text';
-import { I18nConfig, ExtractedText } from '@must/types';
+import { I18nConfig, ExtractedText, ExtractionWarning } from '@must/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -45,24 +45,43 @@ export class AutoI18n {
   }
 
   async extractTexts(): Promise<ExtractedText[]> {
+    const result = await this.extractTextsWithWarnings();
+    return result.texts;
+  }
+
+  async extractTextsWithWarnings(): Promise<{ texts: ExtractedText[], warnings: ExtractionWarning[] }> {
     console.log('🔍 Extracting texts from files...');
 
     const files = await findFiles(this.config.inputPatterns, this.config.excludePatterns);
     console.log(`📁 Found ${files.length} files to process`);
 
     const allExtractedTexts: ExtractedText[] = [];
+    this.extractor.clearWarnings();
 
     for (const file of files) {
       try {
-        const texts = await this.extractor.extractFromFile(file);
-        allExtractedTexts.push(...texts);
+        const result = await this.extractor.extractFromFileWithWarnings(file);
+        allExtractedTexts.push(...result.texts);
       } catch (error) {
         console.warn(`⚠️  Failed to extract from ${file}:`, error);
       }
     }
 
+    const warnings = this.extractor.getWarnings();
+    
+    // 如果有警告，输出提示
+    if (warnings.length > 0) {
+      const errorCount = warnings.filter(w => w.severity === 'error').length;
+      const warningCount = warnings.filter(w => w.severity === 'warning').length;
+      const infoCount = warnings.filter(w => w.severity === 'info').length;
+      
+      if (errorCount > 0 || warningCount > 0) {
+        console.log(`⚠️  发现 ${warnings.length} 条提取警告 (${errorCount} 错误, ${warningCount} 警告, ${infoCount} 信息)`);
+      }
+    }
+
     console.log(`✅ Extracted ${allExtractedTexts.length} text strings`);
-    return allExtractedTexts;
+    return { texts: allExtractedTexts, warnings };
   }
 
   async translateTexts(extractedTexts: ExtractedText[]): Promise<{
@@ -339,11 +358,89 @@ export class AutoI18n {
     console.log(`📋 Report saved to ${reportPath}`);
   }
 
+  /**
+   * 生成警告日志文件
+   */
+  async generateWarningsLog(warnings: ExtractionWarning[]): Promise<void> {
+    if (warnings.length === 0) {
+      return;
+    }
+
+    ensureOutputDirectory(this.config.outputDir);
+    const logPath = path.join(this.config.outputDir, 'extraction-warnings.json');
+    
+    // 按文件分组警告
+    const warningsByFile: Record<string, ExtractionWarning[]> = {};
+    for (const warning of warnings) {
+      if (!warningsByFile[warning.file]) {
+        warningsByFile[warning.file] = [];
+      }
+      warningsByFile[warning.file].push(warning);
+    }
+
+    // 统计信息
+    const summary = {
+      total: warnings.length,
+      byType: {} as Record<string, number>,
+      bySeverity: {
+        error: warnings.filter(w => w.severity === 'error').length,
+        warning: warnings.filter(w => w.severity === 'warning').length,
+        info: warnings.filter(w => w.severity === 'info').length
+      }
+    };
+
+    // 按类型统计
+    for (const warning of warnings) {
+      summary.byType[warning.type] = (summary.byType[warning.type] || 0) + 1;
+    }
+
+    const logContent = {
+      generatedAt: new Date().toISOString(),
+      summary,
+      warningsByFile
+    };
+
+    fs.writeFileSync(logPath, JSON.stringify(logContent, null, 2), 'utf-8');
+    
+    // 控制台输出警告摘要
+    console.log(`⚠️  警告日志已保存到 ${logPath}`);
+    
+    // 输出主要警告到控制台
+    const errorWarnings = warnings.filter(w => w.severity === 'error');
+    const importantWarnings = warnings.filter(w => w.severity === 'warning');
+    
+    if (errorWarnings.length > 0) {
+      console.log('\n❌ 错误:');
+      errorWarnings.slice(0, 5).forEach(w => {
+        console.log(`   ${w.file}:${w.line} - ${w.message}`);
+      });
+      if (errorWarnings.length > 5) {
+        console.log(`   ... 还有 ${errorWarnings.length - 5} 条错误`);
+      }
+    }
+    
+    if (importantWarnings.length > 0) {
+      console.log('\n⚠️  警告:');
+      importantWarnings.slice(0, 5).forEach(w => {
+        console.log(`   ${w.file}:${w.line} - ${w.message}`);
+      });
+      if (importantWarnings.length > 5) {
+        console.log(`   ... 还有 ${importantWarnings.length - 5} 条警告`);
+      }
+    }
+  }
+
   async run(): Promise<void> {
     try {
       console.log('🚀 Starting auto i18n process...');
 
-      const extractedTexts = await this.extractTexts();
+      const { texts: extractedTexts, warnings } = await this.extractTextsWithWarnings();
+      
+      // 生成警告日志
+      if (warnings.length > 0) {
+        await this.generateWarningsLog(warnings);
+      }
+      
       if (extractedTexts.length === 0) {
         console.log('ℹ️  No texts found to translate');
         return;

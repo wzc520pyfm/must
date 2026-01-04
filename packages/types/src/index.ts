@@ -190,23 +190,23 @@ export interface I18nConfig {
   appName?: string;  // 应用名称，用于生成 key
   sourceLanguage: string;
   targetLanguages: string[];
-  
+
   /**
    * 翻译服务商
    * 当使用 customTranslate 时可以设为 'custom'
    */
   translationProvider: 'google' | 'baidu' | 'youdao' | 'azure' | 'custom';
-  
+
   apiKey?: string;
   apiSecret?: string;
   region?: string;
   outputDir: string;
   inputPatterns: string[];
   excludePatterns: string[];
-  
+
   /** @deprecated 使用 customTranslate 代替 */
   customTranslator?: string;
-  
+
   /**
    * 自定义翻译函数配置
    * 当 translationProvider 为 'custom' 时必须提供
@@ -231,7 +231,7 @@ export interface I18nConfig {
    * }
    */
   customTranslate?: CustomTranslatorConfig;
-  
+
   patchDir?: string;  // patch 目录，用于存储增量翻译
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
   keyMaxLength?: number;  // key 最大长度，默认 50
@@ -247,6 +247,48 @@ export interface ExtractedText {
   column: number;
   context?: string;
   type: 'string' | 'template' | 'jsx' | 'vue' | 'html';
+}
+
+/**
+ * 提取警告的严重程度
+ */
+export type ExtractionWarningSeverity = 'warning' | 'error' | 'info';
+
+/**
+ * 提取警告
+ */
+export interface ExtractionWarning {
+  /** 警告类型 */
+  type:
+  | 'complex-expression'      // 复杂表达式，无法提取变量名
+  | 'nested-template'         // 嵌套模板字符串
+  | 'conditional-expression'  // 条件表达式
+  | 'function-call'           // 函数调用
+  | 'too-many-interpolations' // 过多插值
+  | 'dynamic-text'            // 动态文本（无法静态分析）
+  | 'binary-expression'       // 二元表达式
+  | 'parse-error';            // 解析错误
+
+  /** 严重程度 */
+  severity: ExtractionWarningSeverity;
+
+  /** 警告消息 */
+  message: string;
+
+  /** 文件路径 */
+  file: string;
+
+  /** 行号 */
+  line: number;
+
+  /** 列号 */
+  column: number;
+
+  /** 原始代码片段 */
+  code?: string;
+
+  /** 建议的处理方式 */
+  suggestion?: string;
 }
 
 export interface TranslationResult {
@@ -285,7 +327,7 @@ export interface CustomBatchTranslateParams {
  * 自定义翻译函数类型
  * 可以是单个文本翻译函数或批量翻译函数
  */
-export type CustomTranslateFunction = 
+export type CustomTranslateFunction =
   | ((params: CustomTranslateParams) => Promise<string>)
   | ((params: CustomBatchTranslateParams) => Promise<string[]>);
 
@@ -300,13 +342,13 @@ export interface CustomTranslatorConfig {
    * 2. 批量翻译: ({ texts, sourceLanguage, targetLanguage }) => Promise<string[]>
    */
   translate: CustomTranslateFunction;
-  
+
   /**
    * 翻译器名称（用于日志和报告）
    * @default 'custom'
    */
   name?: string;
-  
+
   /**
    * 是否为批量翻译函数
    * 如果为 true，translate 函数应接收 texts 数组并返回翻译结果数组

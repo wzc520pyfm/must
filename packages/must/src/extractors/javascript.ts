@@ -2,8 +2,9 @@ import { readFileSync } from 'fs';
 import { parse } from '@babel/parser';
 const traverse = require('@babel/traverse').default;
 import * as t from '@babel/types';
-import { BaseExtractor, ExtractorConfig } from './base';
+import { BaseExtractor, ExtractorConfig, ExtractResult } from './base';
 import { ExtractedText } from '@must/types';
+import generate from '@babel/generator';
 
 export class JavaScriptExtractor extends BaseExtractor {
   constructor(config: ExtractorConfig = {}) {
@@ -11,7 +12,13 @@ export class JavaScriptExtractor extends BaseExtractor {
   }
 
   async extract(filePath: string): Promise<ExtractedText[]> {
+    const result = await this.extractWithWarnings(filePath);
+    return result.texts;
+  }
+
+  async extractWithWarnings(filePath: string): Promise<ExtractResult> {
     const extractedTexts: ExtractedText[] = [];
+    this.clearWarnings();
 
     try {
       const code = readFileSync(filePath, 'utf-8');
@@ -50,7 +57,7 @@ export class JavaScriptExtractor extends BaseExtractor {
               }
             }
           }
-          
+
           const { value, loc } = path.node;
           if (this.isValidText(value)) {
             extractedTexts.push(
@@ -68,34 +75,70 @@ export class JavaScriptExtractor extends BaseExtractor {
         TemplateLiteral: (path: any) => {
           if (this.options.includeTemplateLiterals) {
             const { quasis, expressions, loc } = path.node;
-            
+            const line = loc?.start.line || 0;
+            const column = loc?.start.column || 0;
+
+            // 检查插值数量
+            if (expressions.length > 10) {
+              this.addWarning(
+                'too-many-interpolations',
+                'warning',
+                `模板字符串包含 ${expressions.length} 个插值，可能过于复杂`,
+                filePath, line, column,
+                this.getNodeCode(path.node),
+                '建议拆分为多个独立的翻译单元，或简化模板结构'
+              );
+            }
+
             // 构建完整的模板字符串，用可配置的占位符格式替代表达式
             let fullTemplate = '';
             const paramNames: string[] = [];
-            
+            let hasComplexExpression = false;
+
             quasis.forEach((quasi: any, index: number) => {
               fullTemplate += quasi.value.raw;
               if (index < expressions.length) {
+                const expr = expressions[index];
+
+                // 分析表达式复杂度
+                const analysis = this.analyzeExpressionComplexity(
+                  expr,
+                  filePath,
+                  expr.loc?.start.line || line,
+                  expr.loc?.start.column || column
+                );
+
+                if (analysis.isComplex) {
+                  hasComplexExpression = true;
+                }
+
                 // 尝试提取变量名（用于命名参数模式）
-                const exprName = this.extractExpressionName(expressions[index]);
+                const exprName = analysis.name || this.extractExpressionName(expr);
                 paramNames.push(exprName || `p${index}`);
-                
+
                 // 如果使用命名参数，使用变量名；否则使用索引
                 fullTemplate += this.formatPlaceholder(index, exprName);
               }
             });
-            
+
             if (this.isValidText(fullTemplate)) {
               const extracted = this.createExtractedText(
                 fullTemplate,
                 filePath,
-                loc?.start.line || 0,
-                loc?.start.column || 0,
+                line,
+                column,
                 'template'
               );
-              // 将参数名存储在 context 中，供后续生成 key 使用
+              // 将参数名和复杂度信息存储在 context 中
+              const contextData: any = {};
               if (paramNames.length > 0) {
-                extracted.context = JSON.stringify({ paramNames });
+                contextData.paramNames = paramNames;
+              }
+              if (hasComplexExpression) {
+                contextData.hasComplexExpression = true;
+              }
+              if (Object.keys(contextData).length > 0) {
+                extracted.context = JSON.stringify(contextData);
               }
               extractedTexts.push(extracted);
             }
@@ -106,15 +149,15 @@ export class JavaScriptExtractor extends BaseExtractor {
         JSXElement: (path: any) => {
           if (!this.options.includeJSX) return;
           if (processedJSXElements.has(path.node)) return;
-          
+
           const children = path.node.children;
           if (!children || children.length === 0) return;
 
           // 检查是否有混合内容（文本 + 表达式）
-          const hasText = children.some((child: any) => 
+          const hasText = children.some((child: any) =>
             t.isJSXText(child) && this.isValidText(child.value)
           );
-          const hasExpression = children.some((child: any) => 
+          const hasExpression = children.some((child: any) =>
             t.isJSXExpressionContainer(child) && !t.isJSXEmptyExpression(child.expression)
           );
 
@@ -174,10 +217,38 @@ export class JavaScriptExtractor extends BaseExtractor {
       });
 
     } catch (error) {
+      this.addWarning(
+        'parse-error',
+        'error',
+        `解析文件失败: ${error instanceof Error ? error.message : String(error)}`,
+        filePath, 0, 0,
+        undefined,
+        '检查文件语法是否正确'
+      );
       console.warn(`Failed to parse ${filePath}:`, error);
     }
 
-    return extractedTexts;
+    return {
+      texts: extractedTexts,
+      warnings: this.getWarnings()
+    };
+  }
+
+  /**
+   * 获取 AST 节点对应的源代码
+   */
+  private getNodeCode(node: any): string {
+    try {
+      const result = generate(node, { compact: true });
+      // 限制长度
+      const code = result.code;
+      if (code.length > 100) {
+        return code.substring(0, 100) + '...';
+      }
+      return code;
+    } catch {
+      return '[无法获取代码]';
+    }
   }
 
   /**

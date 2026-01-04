@@ -1,8 +1,8 @@
-import { BaseExtractor, ExtractorConfig } from './base';
+import { BaseExtractor, ExtractorConfig, ExtractResult } from './base';
 import { JavaScriptExtractor } from './javascript';
 import { VueExtractor } from './vue';
 import { HTMLExtractor } from './html';
-import { ExtractedText, ExtractorOptions, InterpolationConfig } from '@must/types';
+import { ExtractedText, ExtractorOptions, InterpolationConfig, ExtractionWarning } from '@must/types';
 
 export interface TextExtractorConfig {
   options?: ExtractorOptions;
@@ -10,8 +10,14 @@ export interface TextExtractorConfig {
   interpolation?: InterpolationConfig;  // 插值配置
 }
 
+export interface TextExtractResult {
+  texts: ExtractedText[];
+  warnings: ExtractionWarning[];
+}
+
 export class TextExtractor {
   private extractors: Map<string, BaseExtractor> = new Map();
+  private allWarnings: ExtractionWarning[] = [];
 
   constructor(config: TextExtractorConfig = {}) {
     const extractorConfig: ExtractorConfig = {
@@ -28,20 +34,51 @@ export class TextExtractor {
     this.extractors.set('html', new HTMLExtractor(extractorConfig));
   }
 
+  /**
+   * 清空所有警告
+   */
+  clearWarnings(): void {
+    this.allWarnings = [];
+  }
+
+  /**
+   * 获取所有警告
+   */
+  getWarnings(): ExtractionWarning[] {
+    return [...this.allWarnings];
+  }
+
   async extractFromFile(filePath: string): Promise<ExtractedText[]> {
+    const result = await this.extractFromFileWithWarnings(filePath);
+    return result.texts;
+  }
+
+  async extractFromFileWithWarnings(filePath: string): Promise<TextExtractResult> {
     const extension = this.getFileExtension(filePath);
     const extractor = this.extractors.get(extension);
     
     if (!extractor) {
       console.warn(`No extractor found for file type: ${extension}`);
-      return [];
+      return { texts: [], warnings: [] };
     }
 
     try {
-      return await extractor.extract(filePath);
+      // 检查提取器是否支持带警告的提取
+      const jsExtractor = extractor as JavaScriptExtractor;
+      if (typeof jsExtractor.extractWithWarnings === 'function') {
+        const result = await jsExtractor.extractWithWarnings(filePath);
+        this.allWarnings.push(...result.warnings);
+        return result;
+      }
+      
+      // 回退到普通提取
+      const texts = await extractor.extract(filePath);
+      const warnings = extractor.getWarnings();
+      this.allWarnings.push(...warnings);
+      return { texts, warnings };
     } catch (error) {
       console.error(`Error extracting from ${filePath}:`, error);
-      return [];
+      return { texts: [], warnings: [] };
     }
   }
 

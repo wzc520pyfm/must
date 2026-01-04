@@ -1039,6 +1039,95 @@ ${JSON.stringify(texts, null, 2)}`;
 
 ---
 
+## ⚠️ 复杂模板警告
+
+对于难以静态分析的复杂模板字符串，must 会生成警告日志帮助你定位和处理这些情况。
+
+### 警告类型
+
+| 类型 | 严重程度 | 说明 |
+|------|----------|------|
+| `nested-template` | warning | 嵌套的模板字符串 |
+| `conditional-expression` | warning | 条件表达式 (三元运算符) |
+| `too-many-interpolations` | warning | 超过 10 个插值 |
+| `complex-expression` | warning | 动态成员访问等复杂表达式 |
+| `function-call` | info | 函数调用表达式 |
+| `binary-expression` | info | 二元表达式 (加减乘除等) |
+| `parse-error` | error | 文件解析失败 |
+
+### 警告日志
+
+警告信息会保存到 `{outputDir}/extraction-warnings.json`：
+
+```json
+{
+  "generatedAt": "2026-01-04T14:40:10.093Z",
+  "summary": {
+    "total": 7,
+    "byType": {
+      "nested-template": 1,
+      "conditional-expression": 1,
+      "too-many-interpolations": 1
+    },
+    "bySeverity": {
+      "error": 0,
+      "warning": 5,
+      "info": 2
+    }
+  },
+  "warningsByFile": {
+    "src/complex-templates.ts": [
+      {
+        "type": "nested-template",
+        "severity": "warning",
+        "message": "嵌套的模板字符串，难以提取和翻译",
+        "file": "src/complex-templates.ts",
+        "line": 11,
+        "column": 9,
+        "suggestion": "建议将嵌套的模板字符串拆分为独立的翻译单元"
+      }
+    ]
+  }
+}
+```
+
+### 处理建议
+
+**嵌套模板字符串**
+
+```javascript
+// ❌ 不推荐
+const msg = `消息: ${`前缀: ${prefix}`} - ${name}`;
+
+// ✅ 推荐：拆分为独立翻译
+const prefixMsg = t('prefix', { prefix });
+const msg = t('message', { prefixMsg, name });
+```
+
+**条件表达式**
+
+```javascript
+// ❌ 不推荐
+const msg = `用户 ${isVip ? 'VIP' : '普通'} 级别`;
+
+// ✅ 推荐：在模板外处理条件
+const level = isVip ? t('vip') : t('normal');
+const msg = t('userLevel', { level });
+```
+
+**过多插值**
+
+```javascript
+// ❌ 不推荐：11 个插值
+const msg = `${a}-${b}-${c}-${d}-${e}-${f}-${g}-${h}-${i}-${j}-${k}`;
+
+// ✅ 推荐：拆分或使用数组
+const items = [a, b, c, d, e, f, g, h, i, j, k];
+const msg = t('items', { count: items.length });
+```
+
+---
+
 ## 🏗️ 项目结构
 
 ```
