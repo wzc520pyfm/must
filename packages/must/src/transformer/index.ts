@@ -31,6 +31,7 @@ export class CodeTransformer {
     if (!importStatement) {
       // 默认配置
       return {
+        unified: false,
         global: "import { useTranslation } from 'react-i18next';",
         contextInjection: "const { t } = useTranslation();",
         staticFileImport: "import i18n from '@/i18n';",
@@ -41,6 +42,7 @@ export class CodeTransformer {
     if (typeof importStatement === 'string') {
       // 向后兼容：字符串格式只设置全局导入
       return {
+        unified: false,
         global: importStatement,
         contextInjection: "const { t } = useTranslation();",
         staticFileImport: "import i18n from '@/i18n';",
@@ -49,7 +51,23 @@ export class CodeTransformer {
     }
 
     // 对象格式
+    // 统一模式：所有文件使用相同的导入和包裹方式
+    if (importStatement.unified) {
+      return {
+        unified: true,
+        global: importStatement.global || "import { t } from 'i18n';",
+        wrapper: importStatement.wrapper || "t",
+        // 统一模式下，这些配置指向统一配置
+        contextInjection: undefined,
+        staticFileImport: importStatement.global || "import { t } from 'i18n';",
+        staticFileWrapper: importStatement.wrapper || "t",
+        componentWrapper: importStatement.wrapper || "t"
+      };
+    }
+
+    // 非统一模式
     return {
+      unified: false,
       global: importStatement.global || "import { useTranslation } from 'react-i18next';",
       contextInjection: importStatement.contextInjection || "const { t } = useTranslation();",
       staticFileImport: importStatement.staticFileImport || "import i18n from '@/i18n';",
@@ -196,10 +214,16 @@ export class CodeTransformer {
       const importConfig = this.parseImportConfig();
 
       // 根据文件类型选择不同的包裹配置
-      // 静态文件使用 staticFileWrapper，React 组件使用 componentWrapper 或 wrapperFunction
-      const wrapperConfig: string | WrapperGenerator = isStatic
-        ? (importConfig.staticFileWrapper || 'i18n.t')
-        : (importConfig.componentWrapper || this.config.transform.wrapperFunction || 't');
+      // 统一模式：所有文件使用相同的包裹配置
+      // 非统一模式：静态文件使用 staticFileWrapper，React 组件使用 componentWrapper 或 wrapperFunction
+      let wrapperConfig: string | WrapperGenerator;
+      if (importConfig.unified) {
+        wrapperConfig = importConfig.wrapper || 't';
+      } else {
+        wrapperConfig = isStatic
+          ? (importConfig.staticFileWrapper || 'i18n.t')
+          : (importConfig.componentWrapper || this.config.transform?.wrapperFunction || 't');
+      }
 
       // 简单函数名（用于检测解构等）
       const simpleWrapperFunction = typeof wrapperConfig === 'string' && !this.isTemplateWrapper(wrapperConfig)

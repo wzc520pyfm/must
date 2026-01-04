@@ -16,19 +16,43 @@ export type WrapperGenerator = (
  */
 export interface ImportConfig {
   /**
+   * 统一模式：所有文件（React 组件和静态文件）使用相同的导入和包裹方式
+   * 如果为 true，将只使用 global 和 wrapper 配置，忽略其他配置
+   * @default false
+   */
+  unified?: boolean;
+  
+  /**
+   * 统一包裹函数（当 unified 为 true 时使用）
+   * 支持三种格式：
+   * 1. 简单函数名: "trans" -> trans("key")
+   * 2. 模板字符串: "trans('{{key}}', '{{text}}')" -> trans('key', '原文')
+   * 3. 函数生成器: (key, text) => `trans('${key}', '${text}')`
+   * 
+   * 模板变量:
+   * - {{key}}: 翻译 key
+   * - {{text}}: 原文（会自动转义引号）
+   * - {{0}}, {{1}}, ...: 插值表达式（用于模板字符串）
+   */
+  wrapper?: string | WrapperGenerator;
+  
+  /**
    * 全局导入语句，会添加到文件顶部的 import 区域
    * 例如: "import { useTranslation } from 'react-i18next';"
+   * 或统一模式: "import { trans } from 'i18n-utils';"
    */
   global?: string;
   /**
    * 上下文注入语句，会添加到 React 组件/Hook 函数体的开头
    * 例如: "const { t } = useTranslation();"
+   * 注意：统一模式下此配置被忽略
    */
   contextInjection?: string;
   /**
    * 静态文件的导入语句（用于非 React 组件的纯 JS/TS 文件）
    * 例如: "import i18n from '@/i18n';"
    * 或: "import { getLocal } from '@/utils/local';"
+   * 注意：统一模式下此配置被忽略，使用 global
    */
   staticFileImport?: string;
   /**
@@ -42,11 +66,13 @@ export interface ImportConfig {
    * - {{key}}: 翻译 key
    * - {{text}}: 原文
    * - {{0}}, {{1}}, ...: 插值表达式（用于模板字符串）
+   * 注意：统一模式下此配置被忽略，使用 wrapper
    */
   staticFileWrapper?: string | WrapperGenerator;
   /**
    * React 组件中使用的翻译函数（可选，默认使用 wrapperFunction）
    * 支持与 staticFileWrapper 相同的格式
+   * 注意：统一模式下此配置被忽略，使用 wrapper
    */
   componentWrapper?: string | WrapperGenerator;
 }
