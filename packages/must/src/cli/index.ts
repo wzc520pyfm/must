@@ -15,12 +15,26 @@ program
 
 // Default action when no command is specified
 program
-  .action(async () => {
+  .option('--key-prefix <prefix>', 'Custom key prefix (e.g., CB_IBG_APPROLL_)')
+  .option('--key-counter-padding <num>', 'Counter padding (e.g., 5 for 00001)', parseInt)
+  .option('--key-counter-start <num>', 'Counter start value', parseInt)
+  .option('--key-prefix-only', 'Use prefix + counter only mode')
+  .action(async (options) => {
     try {
       const spinner = ora('Initializing...').start();
       
       const configManager = new ConfigManager();
       const config = configManager.getConfig();
+      
+      // 应用命令行的 key 配置
+      if (options.keyPrefix || options.keyCounterPadding !== undefined || 
+          options.keyCounterStart !== undefined || options.keyPrefixOnly) {
+        config.keyConfig = config.keyConfig || {};
+        if (options.keyPrefix) config.keyConfig.prefix = options.keyPrefix;
+        if (options.keyCounterPadding !== undefined) config.keyConfig.counterPadding = options.keyCounterPadding;
+        if (options.keyCounterStart !== undefined) config.keyConfig.counterStart = options.keyCounterStart;
+        if (options.keyPrefixOnly) config.keyConfig.prefixOnly = true;
+      }
       
       const autoI18n = new AutoI18n(config);
       await autoI18n.run();

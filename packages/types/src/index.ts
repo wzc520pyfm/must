@@ -21,7 +21,7 @@ export interface ImportConfig {
    * @default false
    */
   unified?: boolean;
-  
+
   /**
    * 统一包裹函数（当 unified 为 true 时使用）
    * 支持三种格式：
@@ -35,7 +35,7 @@ export interface ImportConfig {
    * - {{0}}, {{1}}, ...: 插值表达式（用于模板字符串）
    */
   wrapper?: string | WrapperGenerator;
-  
+
   /**
    * 全局导入语句，会添加到文件顶部的 import 区域
    * 例如: "import { useTranslation } from 'react-i18next';"
@@ -96,6 +96,88 @@ export interface TransformConfig {
   }) => string;
 }
 
+/**
+ * Key 生成器参数
+ */
+export interface KeyGeneratorParams {
+  /** 路径部分，如 'app.components.UserProfile' */
+  base: string;
+  /** 文案简写部分，如 'welcomeBack' */
+  text: string;
+  /** 计数器，从 0 开始，用于处理重复 key */
+  num: number;
+  /** 命名参数列表（当启用 namedParams 时） */
+  params?: string[];
+  /** 完整文件路径 */
+  filePath: string;
+  /** 原始源语言文案 */
+  originalText: string;
+  /** 翻译后的文案（用于生成 key） */
+  translatedText: string;
+  /** 应用名称 */
+  appName?: string;
+}
+
+/**
+ * Key 生成配置
+ */
+export interface KeyConfig {
+  /**
+   * 自定义前缀
+   * 例如: 'CB_IBG_APPROLL_'
+   * 生成的 key: 'CB_IBG_APPROLL_00001'
+   */
+  prefix?: string;
+
+  /**
+   * 计数器样式
+   * - 'none': 不添加计数器
+   * - 'auto': 仅在重复时添加计数器（默认）
+   * - 'always': 始终添加计数器
+   */
+  counterStyle?: 'none' | 'auto' | 'always';
+
+  /**
+   * 计数器填充位数
+   * 例如: 5 表示 00001, 00002, ...
+   * 默认: 0（不填充）
+   */
+  counterPadding?: number;
+
+  /**
+   * 计数器起始值
+   * 默认: 0
+   */
+  counterStart?: number;
+
+  /**
+   * 是否只使用前缀+计数器模式
+   * 如果为 true，key 格式为: {prefix}{counter}
+   * 如果为 false（默认），key 格式为: {prefix}{base}.{text}[_{params}][.counter]
+   */
+  prefixOnly?: boolean;
+
+  /**
+   * 自定义 key 生成函数
+   * 提供最大灵活性，可以完全自定义 key 格式
+   * 如果提供此函数，将忽略其他配置（prefix, counterStyle 等）
+   * 
+   * @example
+   * // 简单前缀+计数器格式
+   * generator: ({ num }) => `CB_IBG_${String(num).padStart(5, '0')}`
+   * 
+   * @example
+   * // 自定义格式
+   * generator: ({ base, text, num, params }) => {
+   *   let key = `${base}.${text}`;
+   *   if (params?.length) key += `_{${params.join('}_{')}}`; 
+   *   if (num > 0) key += `.${num}`;
+   *   return key;
+   * }
+   */
+  generator?: (params: KeyGeneratorParams) => string;
+}
+
 export interface I18nConfig {
   appName?: string;  // 应用名称，用于生成 key
   sourceLanguage: string;
@@ -111,6 +193,7 @@ export interface I18nConfig {
   patchDir?: string;  // patch 目录，用于存储增量翻译
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
   keyMaxLength?: number;  // key 最大长度，默认 50
+  keyConfig?: KeyConfig;  // key 生成配置
   transform?: TransformConfig;  // 代码转换配置
   interpolation?: InterpolationConfig;  // 插值配置
 }

@@ -116,6 +116,9 @@ export class AutoI18n {
       // 忽略错误
     }
 
+    // 全局计数器（用于 prefixOnly 或 always 计数器模式）
+    const globalCounter = { value: this.config.keyConfig?.counterStart ?? 0 };
+
     for (const sourceText of uniqueTexts) {
       const extracted = textMap.get(sourceText)!;
       
@@ -141,16 +144,18 @@ export class AutoI18n {
         }
         
         // 生成新的唯一 key
-        key = generateKey(
-          sourceText,
-          extracted.file,
-          translatedForKey,
-          this.config.appName,
-          this.config.keyStyle || 'dot',
-          this.existingKeys,
-          this.config.keyMaxLength || 50,
-          paramNames
-        );
+        key = generateKey({
+          text: sourceText,
+          filePath: extracted.file,
+          translatedText: translatedForKey,
+          appName: this.config.appName,
+          keyStyle: this.config.keyStyle || 'dot',
+          existingKeys: this.existingKeys,
+          maxKeyLength: this.config.keyMaxLength || 50,
+          paramNames,
+          keyConfig: this.config.keyConfig,
+          globalCounter
+        });
         this.existingKeys.add(key);
       }
       

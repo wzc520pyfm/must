@@ -22,6 +22,24 @@ const config = {
     'src/i18n/**'
   ],
 
+  // Key 生成配置
+  keyConfig: {
+    // 自定义前缀
+    prefix: 'CB_IBG_APPROLL_',
+    
+    // 计数器样式: 'none' | 'auto' | 'always'
+    counterStyle: 'always',
+    
+    // 计数器填充位数 (5 = 00001, 00002, ...)
+    counterPadding: 5,
+    
+    // 计数器起始值
+    counterStart: 0,
+    
+    // 仅使用前缀+计数器模式
+    prefixOnly: true,
+  },
+
   // 插值配置
   interpolation: {
     prefix: '{',
