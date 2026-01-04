@@ -238,7 +238,7 @@ keyConfig: {
 
 ### 前缀模式
 
-生成格式：`{prefix}{counter}`
+生成格式：`{prefix}{counter}[_{params}]`
 
 ```javascript
 keyConfig: {
@@ -253,13 +253,44 @@ keyConfig: {
   
   /** 计数器起始值 */
   counterStart: 0,
+  
+  /** 是否在 key 中包含命名参数（配合 interpolation.namedParams 使用） */
+  includeParams: false,
 }
 ```
 
-生成示例：
+生成示例（不包含参数）：
 - `CB_IBG_APPROLL_00000`
 - `CB_IBG_APPROLL_00001`
 - `CB_IBG_APPROLL_00002`
+
+### 前缀模式 + 命名参数
+
+当 `includeParams: true` 且 `interpolation.namedParams: true` 时：
+
+```javascript
+keyConfig: {
+  prefix: 'CB_IBG_APPROLL_',
+  prefixOnly: true,
+  counterPadding: 5,
+  includeParams: true,  // 在 key 中包含参数名
+},
+interpolation: {
+  prefix: '{',
+  suffix: '}',
+  namedParams: true,  // 从变量名提取参数
+}
+```
+
+源代码：
+```javascript
+`欢迎 ${username}，您有 ${count} 条消息`
+```
+
+生成示例：
+- `CB_IBG_APPROLL_00000_{username}_{count}`
+- `CB_IBG_APPROLL_00001_{level}`
+- `CB_IBG_APPROLL_00002`（无参数的文案）
 
 ### 自定义生成函数
 
@@ -682,6 +713,58 @@ module.exports = {
 };
 
 // 生成的 key: CB_IBG_APPROLL_00000, CB_IBG_APPROLL_00001, ...
+```
+
+### 示例 3.1：前缀 + 计数器 + 命名参数
+
+```javascript
+// must.config.js
+module.exports = {
+  appName: 'myapp',
+  sourceLanguage: 'zh-CN',
+  targetLanguages: ['en'],
+  translationProvider: 'baidu',
+  apiKey: process.env.BAIDU_APP_ID,
+  apiSecret: process.env.BAIDU_APP_KEY,
+  outputDir: 'src/i18n',
+  inputPatterns: ['src/**/*.{ts,tsx}'],
+  excludePatterns: ['node_modules/**', 'src/i18n/**'],
+  
+  // Key 使用前缀 + 5位数字 + 参数名
+  keyConfig: {
+    prefix: 'CB_IBG_APPROLL_',
+    prefixOnly: true,
+    counterPadding: 5,
+    counterStart: 0,
+    includeParams: true,  // ✅ 包含命名参数
+  },
+  
+  interpolation: {
+    prefix: '{',
+    suffix: '}',
+    namedParams: true,  // ✅ 启用命名参数
+    translationFormat: 'xml',
+  },
+  
+  transform: {
+    enabled: true,
+    importStatement: {
+      unified: true,
+      global: "import { trans } from '@/i18n-utils';",
+      wrapper: (key, text, interpolations) => {
+        if (interpolations?.length) {
+          const params = interpolations.join(', ');
+          return `trans('${key}', { ${params} })`;
+        }
+        return `trans('${key}')`;
+      },
+    },
+  }
+};
+
+// 源代码: `欢迎 ${username}，您有 ${count} 条消息`
+// 生成的 key: CB_IBG_APPROLL_00000_{username}_{count}
+// 转换后: trans('CB_IBG_APPROLL_00000_{username}_{count}', { username, count })
 ```
 
 ### 示例 4：自定义 Key 生成函数

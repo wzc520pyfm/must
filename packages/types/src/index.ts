@@ -152,10 +152,18 @@ export interface KeyConfig {
 
   /**
    * 是否只使用前缀+计数器模式
-   * 如果为 true，key 格式为: {prefix}{counter}
+   * 如果为 true，key 格式为: {prefix}{counter}[_{params}]
    * 如果为 false（默认），key 格式为: {prefix}{base}.{text}[_{params}][.counter]
    */
   prefixOnly?: boolean;
+
+  /**
+   * 是否在 key 中包含命名参数
+   * 当 interpolation.namedParams 为 true 时，可以选择将参数名添加到 key 中
+   * 例如: 'CB_IBG_APPROLL_00001_{username}_{count}'
+   * @default false
+   */
+  includeParams?: boolean;
 
   /**
    * 自定义 key 生成函数

@@ -132,14 +132,34 @@ export class AutoI18n {
         const enTranslation = enTranslations?.find(t => t.sourceText === sourceText);
         const translatedForKey = enTranslation?.translatedText || sourceText;
         
-        // 从 context 中提取参数名（如果启用了 includeParamsInKey）
+        // 从 context 中提取参数名（如果启用了 includeParams 或 includeParamsInKey）
         let paramNames: string[] | undefined;
-        if (this.config.interpolation?.includeParamsInKey && extracted.context) {
-          try {
-            const ctx = JSON.parse(extracted.context);
-            paramNames = ctx.paramNames;
-          } catch {
-            // 忽略解析错误
+        const shouldIncludeParams = this.config.keyConfig?.includeParams || 
+                                    this.config.interpolation?.includeParamsInKey;
+        
+        if (shouldIncludeParams) {
+          // 首先尝试从 context 中获取（模板字符串）
+          if (extracted.context) {
+            try {
+              const ctx = JSON.parse(extracted.context);
+              paramNames = ctx.paramNames;
+            } catch {
+              // 忽略解析错误
+            }
+          }
+          
+          // 如果没有从 context 获取到，尝试从文本中提取 {name} 格式的参数
+          if (!paramNames || paramNames.length === 0) {
+            const prefix = this.config.interpolation?.prefix || '{{';
+            const suffix = this.config.interpolation?.suffix || '}}';
+            // 构建正则表达式来匹配占位符
+            const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`${escapedPrefix}([a-zA-Z_][a-zA-Z0-9_]*)${escapedSuffix}`, 'g');
+            const matches = [...sourceText.matchAll(regex)];
+            if (matches.length > 0) {
+              paramNames = matches.map(m => m[1]);
+            }
           }
         }
         

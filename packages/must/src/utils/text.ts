@@ -196,17 +196,22 @@ export function generateKey(
     return key;
   }
 
-  // 前缀模式: {prefix}{counter}
+  // 前缀模式: {prefix}{counter}[_{params}]
   if (kc?.prefixOnly && kc?.prefix) {
     const counterStart = kc.counterStart ?? 0;
     const counterPadding = kc.counterPadding ?? 0;
     let num = gc?.value ?? counterStart;
     
-    let key = `${kc.prefix}${formatCounter(num, counterPadding)}`;
+    // 生成参数后缀（如果启用了 includeParams）
+    const paramsSuffix = (kc.includeParams && pn && pn.length > 0)
+      ? pn.map(name => `_{${name}}`).join('')
+      : '';
+    
+    let key = `${kc.prefix}${formatCounter(num, counterPadding)}${paramsSuffix}`;
     
     while (ek.has(key)) {
       num++;
-      key = `${kc.prefix}${formatCounter(num, counterPadding)}`;
+      key = `${kc.prefix}${formatCounter(num, counterPadding)}${paramsSuffix}`;
     }
     
     // 更新全局计数器

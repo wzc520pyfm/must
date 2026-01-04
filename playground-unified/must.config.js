@@ -26,18 +26,22 @@ const config = {
   keyConfig: {
     // 自定义前缀
     prefix: 'CB_IBG_APPROLL_',
-    
+
     // 计数器样式: 'none' | 'auto' | 'always'
     counterStyle: 'always',
-    
+
     // 计数器填充位数 (5 = 00001, 00002, ...)
     counterPadding: 5,
-    
+
     // 计数器起始值
     counterStart: 0,
-    
+
     // 仅使用前缀+计数器模式
     prefixOnly: true,
+
+    // ✅ 在 key 中包含命名参数
+    // 生成格式: CB_IBG_APPROLL_00000_{username}_{count}
+    includeParams: true,
   },
 
   // 插值配置
@@ -56,14 +60,14 @@ const config = {
     importStatement: {
       // 开启统一模式
       unified: true,
-      
+
       // 统一导入语句 - 所有文件都使用这个
       global: "import { trans } from '@/i18n-utils';",
-      
+
       // 统一包裹函数 - 所有文件都使用这个
       // 使用模板格式：trans('key', '原文')
       // wrapper: "trans('{{key}}', '{{text}}')",
-      
+
       // 也可以使用函数生成器：
       // wrapper: (key, text) => `trans('${key}', '${text}')`,
       wrapper: (key, text) => `trans('${key}' /** ${text} */)`,
