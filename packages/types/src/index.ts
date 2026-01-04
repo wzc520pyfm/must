@@ -190,14 +190,48 @@ export interface I18nConfig {
   appName?: string;  // 应用名称，用于生成 key
   sourceLanguage: string;
   targetLanguages: string[];
-  translationProvider: 'google' | 'baidu' | 'youdao' | 'azure';
+  
+  /**
+   * 翻译服务商
+   * 当使用 customTranslate 时可以设为 'custom'
+   */
+  translationProvider: 'google' | 'baidu' | 'youdao' | 'azure' | 'custom';
+  
   apiKey?: string;
   apiSecret?: string;
   region?: string;
   outputDir: string;
   inputPatterns: string[];
   excludePatterns: string[];
+  
+  /** @deprecated 使用 customTranslate 代替 */
   customTranslator?: string;
+  
+  /**
+   * 自定义翻译函数配置
+   * 当 translationProvider 为 'custom' 时必须提供
+   * 
+   * @example
+   * // 单文本翻译
+   * customTranslate: {
+   *   translate: async ({ text, sourceLanguage, targetLanguage }) => {
+   *     const result = await myTranslationAPI(text, sourceLanguage, targetLanguage);
+   *     return result.translatedText;
+   *   }
+   * }
+   * 
+   * @example
+   * // 批量翻译（更高效）
+   * customTranslate: {
+   *   batch: true,
+   *   translate: async ({ texts, sourceLanguage, targetLanguage }) => {
+   *     const results = await myBatchTranslationAPI(texts, sourceLanguage, targetLanguage);
+   *     return results.map(r => r.translatedText);
+   *   }
+   * }
+   */
+  customTranslate?: CustomTranslatorConfig;
+  
   patchDir?: string;  // patch 目录，用于存储增量翻译
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
   keyMaxLength?: number;  // key 最大长度，默认 50
@@ -221,6 +255,64 @@ export interface TranslationResult {
   sourceLanguage: string;
   targetLanguage: string;
   provider: string;
+}
+
+/**
+ * 自定义翻译函数的参数
+ */
+export interface CustomTranslateParams {
+  /** 要翻译的文本 */
+  text: string;
+  /** 源语言代码 */
+  sourceLanguage: string;
+  /** 目标语言代码 */
+  targetLanguage: string;
+}
+
+/**
+ * 批量翻译函数的参数
+ */
+export interface CustomBatchTranslateParams {
+  /** 要翻译的文本数组 */
+  texts: string[];
+  /** 源语言代码 */
+  sourceLanguage: string;
+  /** 目标语言代码 */
+  targetLanguage: string;
+}
+
+/**
+ * 自定义翻译函数类型
+ * 可以是单个文本翻译函数或批量翻译函数
+ */
+export type CustomTranslateFunction = 
+  | ((params: CustomTranslateParams) => Promise<string>)
+  | ((params: CustomBatchTranslateParams) => Promise<string[]>);
+
+/**
+ * 自定义翻译器配置
+ */
+export interface CustomTranslatorConfig {
+  /**
+   * 翻译函数
+   * 支持两种签名：
+   * 1. 单文本翻译: ({ text, sourceLanguage, targetLanguage }) => Promise<string>
+   * 2. 批量翻译: ({ texts, sourceLanguage, targetLanguage }) => Promise<string[]>
+   */
+  translate: CustomTranslateFunction;
+  
+  /**
+   * 翻译器名称（用于日志和报告）
+   * @default 'custom'
+   */
+  name?: string;
+  
+  /**
+   * 是否为批量翻译函数
+   * 如果为 true，translate 函数应接收 texts 数组并返回翻译结果数组
+   * @default false
+   */
+  batch?: boolean;
 }
 
 export interface I18nFile {

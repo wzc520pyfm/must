@@ -5,11 +5,12 @@
 ## ✨ 特性
 
 - 🔍 **智能提取** - 自动从 JS/TS/JSX/TSX/Vue/HTML 文件中提取文案
-- 🌐 **多语言翻译** - 支持百度、Google、Azure 等翻译服务
+- 🌐 **多语言翻译** - 支持百度、Google、Azure 等翻译服务，或自定义翻译函数
 - 🔄 **代码转换** - 自动将硬编码文案替换为国际化函数调用
 - 🎯 **灵活配置** - 支持自定义插值格式、key 生成规则、包裹函数
 - 📦 **统一模式** - 所有文件使用相同的国际化方案
 - 🔧 **命名参数** - 支持从变量名生成命名占位符
+- 🔌 **自定义翻译** - 支持自定义翻译函数，集成任意翻译服务或本地模型
 
 ## 📦 安装
 
@@ -151,7 +152,7 @@ module.exports = {
   /** 目标语言列表 */
   targetLanguages: ['en', 'ja', 'ko'],
   
-  /** 翻译服务商: 'google' | 'baidu' | 'azure' | 'youdao' */
+  /** 翻译服务商: 'google' | 'baidu' | 'azure' | 'youdao' | 'custom' */
   translationProvider: 'baidu',
   
   /** API Key */
@@ -162,6 +163,9 @@ module.exports = {
   
   /** 区域（Azure 需要） */
   region: 'eastasia',
+  
+  /** 自定义翻译函数（当 translationProvider 为 'custom' 时使用） */
+  // customTranslate: { ... } // 参见下方 "自定义翻译" 章节
   
   // ==================== 文件配置 ====================
   
@@ -450,6 +454,152 @@ interpolation: {
 1. 提取：`欢迎 {{0}}` 
 2. 翻译时：`欢迎 <ph id="0"/>` （转换为安全格式）
 3. 翻译后：`Welcome <ph id="0"/>` → `Welcome {{0}}`（转换回来）
+
+---
+
+## 🔌 自定义翻译
+
+当内置的翻译服务商不满足需求时，可以使用自定义翻译函数。
+
+### 基础配置（单文本翻译）
+
+```javascript
+module.exports = {
+  translationProvider: 'custom',
+  
+  customTranslate: {
+    name: 'my-translator',  // 可选，用于日志
+    
+    translate: async ({ text, sourceLanguage, targetLanguage }) => {
+      // 调用你自己的翻译 API
+      const response = await fetch('https://my-translation-api.com/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          from: sourceLanguage,
+          to: targetLanguage
+        })
+      });
+      const result = await response.json();
+      return result.translatedText;
+    }
+  }
+};
+```
+
+### 批量翻译（更高效）
+
+对于支持批量翻译的 API，使用批量模式可以大幅提升性能：
+
+```javascript
+module.exports = {
+  translationProvider: 'custom',
+  
+  customTranslate: {
+    name: 'my-batch-translator',
+    batch: true,  // 启用批量模式
+    
+    translate: async ({ texts, sourceLanguage, targetLanguage }) => {
+      // texts 是字符串数组
+      const response = await fetch('https://my-translation-api.com/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texts,
+          from: sourceLanguage,
+          to: targetLanguage
+        })
+      });
+      const result = await response.json();
+      // 返回翻译结果数组，顺序与输入一致
+      return result.translations;
+    }
+  }
+};
+```
+
+### 使用本地大模型
+
+```javascript
+const { OpenAI } = require('openai');
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+module.exports = {
+  translationProvider: 'custom',
+  
+  customTranslate: {
+    name: 'openai-gpt4',
+    batch: true,
+    
+    translate: async ({ texts, sourceLanguage, targetLanguage }) => {
+      const prompt = `Translate the following texts from ${sourceLanguage} to ${targetLanguage}.
+Return ONLY a JSON array of translated strings in the same order.
+Keep any placeholders like {name} or {{0}} unchanged.
+
+Texts to translate:
+${JSON.stringify(texts, null, 2)}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3
+      });
+      
+      return JSON.parse(completion.choices[0].message.content);
+    }
+  }
+};
+```
+
+### 语言代码映射
+
+如果你的翻译 API 使用不同的语言代码格式：
+
+```javascript
+const LANG_MAP = {
+  'zh-CN': 'zh',
+  'en': 'en',
+  'ja': 'jp'
+};
+
+module.exports = {
+  translationProvider: 'custom',
+  
+  customTranslate: {
+    translate: async ({ text, sourceLanguage, targetLanguage }) => {
+      const from = LANG_MAP[sourceLanguage] || sourceLanguage;
+      const to = LANG_MAP[targetLanguage] || targetLanguage;
+      
+      // 使用映射后的语言代码调用 API
+      return await myTranslateAPI(text, from, to);
+    }
+  }
+};
+```
+
+### 函数参数说明
+
+**单文本模式 (`batch: false` 或省略)**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `text` | `string` | 要翻译的文本 |
+| `sourceLanguage` | `string` | 源语言代码，如 `'zh-CN'` |
+| `targetLanguage` | `string` | 目标语言代码，如 `'en'` |
+
+返回值：`Promise<string>` - 翻译后的文本
+
+**批量模式 (`batch: true`)**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `texts` | `string[]` | 要翻译的文本数组 |
+| `sourceLanguage` | `string` | 源语言代码 |
+| `targetLanguage` | `string` | 目标语言代码 |
+
+返回值：`Promise<string[]>` - 翻译后的文本数组，顺序与输入一致
 
 ---
 
@@ -825,6 +975,66 @@ module.exports = {
 
 // 生成的 key: myapp.Home.welcome_{username}_{count}
 // 转换后: t('myapp.Home.welcome_{username}_{count}', { username, count })
+```
+
+### 示例 5：自定义翻译函数
+
+```javascript
+// must.config.js
+const { OpenAI } = require('openai');
+
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL  // 可选，用于代理
+});
+
+module.exports = {
+  appName: 'myapp',
+  sourceLanguage: 'zh-CN',
+  targetLanguages: ['en', 'ja'],
+  
+  // 使用自定义翻译
+  translationProvider: 'custom',
+  customTranslate: {
+    name: 'openai-gpt4',
+    batch: true,
+    
+    translate: async ({ texts, sourceLanguage, targetLanguage }) => {
+      const langNames = {
+        'zh-CN': 'Chinese',
+        'en': 'English',
+        'ja': 'Japanese'
+      };
+      
+      const prompt = `Translate the following texts from ${langNames[sourceLanguage]} to ${langNames[targetLanguage]}.
+Return ONLY a JSON array of translated strings, maintaining the exact order.
+Preserve any placeholders like {name}, {{0}}, or <ph id="0"/>.
+
+Input:
+${JSON.stringify(texts, null, 2)}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2
+      });
+      
+      return JSON.parse(completion.choices[0].message.content);
+    }
+  },
+  
+  outputDir: 'src/i18n',
+  inputPatterns: ['src/**/*.{ts,tsx}'],
+  excludePatterns: ['node_modules/**', 'src/i18n/**'],
+  
+  transform: {
+    enabled: true,
+    importStatement: {
+      global: "import { useTranslation } from 'react-i18next';",
+      contextInjection: "const { t } = useTranslation();",
+    },
+  }
+};
 ```
 
 ---

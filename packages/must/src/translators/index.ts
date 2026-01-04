@@ -2,6 +2,7 @@ import { BaseTranslator, TranslatorConfig } from './base';
 import { GoogleTranslator } from './google';
 import { BaiduTranslator } from './baidu';
 import { AzureTranslator } from './azure';
+import { CustomTranslator } from './custom';
 import { I18nConfig, TranslatorOptions } from '@must/types';
 
 export class TranslationManager {
@@ -27,6 +28,14 @@ export class TranslationManager {
         return new BaiduTranslator(options);
       case 'azure':
         return new AzureTranslator(options);
+      case 'custom':
+        if (!config.customTranslate) {
+          throw new Error('customTranslate configuration is required when translationProvider is "custom"');
+        }
+        return new CustomTranslator({
+          ...options,
+          customConfig: config.customTranslate
+        });
       default:
         throw new Error(`Unsupported translation provider: ${config.translationProvider}`);
     }
@@ -55,6 +64,6 @@ export class TranslationManager {
   }
 }
 
-export { BaseTranslator, GoogleTranslator, BaiduTranslator, AzureTranslator };
+export { BaseTranslator, GoogleTranslator, BaiduTranslator, AzureTranslator, CustomTranslator };
 export type { TranslatorOptions };
 
