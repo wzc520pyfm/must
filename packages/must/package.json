@@ -1,6 +1,6 @@
 {
   "name": "must",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "An automated internationalization tool that extracts text from projects and translates them using various translation providers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
