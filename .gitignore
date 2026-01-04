@@ -35,6 +35,7 @@ playground/src/i18n/
 
 # pnpm
 .pnpm-debug.log*
+.pnpm-store
 
 
 .history
