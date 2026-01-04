@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.8.0...main
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.8.0...main)
+
+### 🏡 Chore
+
+- Rename must package to must-cli and update references in README and package.json files ([8d4e7fb](https://github.com/wzc520pyfm/must/commit/8d4e7fb))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.7.0...main
 
 [compare changes](https://github.com/wzc520pyfm/must/compare/v1.7.0...main)
