@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.1.1...main
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.1.1...main)
+
+### 🏡 Chore
+
+- Bump version of must package to 1.6.0 ([7ccae37](https://github.com/wzc520pyfm/must/commit/7ccae37))
+- Update release scripts to streamline the release process and add a new publish command for the must package ([204749e](https://github.com/wzc520pyfm/must/commit/204749e))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.1.1
 
 [compare changes](https://github.com/wzc520pyfm/must/compare/v1.1.0...v1.1.1)
