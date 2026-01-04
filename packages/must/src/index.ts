@@ -129,6 +129,17 @@ export class AutoI18n {
         const enTranslation = enTranslations?.find(t => t.sourceText === sourceText);
         const translatedForKey = enTranslation?.translatedText || sourceText;
         
+        // 从 context 中提取参数名（如果启用了 includeParamsInKey）
+        let paramNames: string[] | undefined;
+        if (this.config.interpolation?.includeParamsInKey && extracted.context) {
+          try {
+            const ctx = JSON.parse(extracted.context);
+            paramNames = ctx.paramNames;
+          } catch {
+            // 忽略解析错误
+          }
+        }
+        
         // 生成新的唯一 key
         key = generateKey(
           sourceText,
@@ -137,7 +148,8 @@ export class AutoI18n {
           this.config.appName,
           this.config.keyStyle || 'dot',
           this.existingKeys,
-          this.config.keyMaxLength || 50
+          this.config.keyMaxLength || 50,
+          paramNames
         );
         this.existingKeys.add(key);
       }

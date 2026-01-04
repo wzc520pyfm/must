@@ -168,12 +168,30 @@ export interface InterpolationConfig {
   suffix?: string;
 
   /**
+   * 使用命名参数而非索引参数
+   * 如果为 true，会从模板字符串的变量名提取参数名
+   * 例如: `欢迎${username}` -> '欢迎{username}'
+   * 
+   * @default false
+   */
+  namedParams?: boolean;
+
+  /**
+   * 在 key 中包含参数名
+   * 例如: 'app.welcome_{username}_{location}'
+   * 
+   * @default false
+   */
+  includeParamsInKey?: boolean;
+
+  /**
    * 自定义占位符生成函数
    * 如果提供，将忽略 prefix/suffix，完全由函数控制格式
    * @param index 占位符索引 (0, 1, 2, ...)
-   * @returns 占位符字符串，如 '{{0}}', '${0}', '<ph id="0"/>'
+   * @param name 变量名（如果 namedParams 为 true）
+   * @returns 占位符字符串，如 '{{0}}', '{username}', '<ph id="0"/>'
    */
-  format?: (index: number) => string;
+  format?: (index: number, name?: string) => string;
 
   /**
    * 翻译时使用的占位符格式

@@ -24,8 +24,10 @@ const config = {
 
   // 插值配置
   interpolation: {
-    prefix: '{{',
-    suffix: '}}',
+    prefix: '{',
+    suffix: '}',
+    // 启用命名参数（从变量名提取）
+    namedParams: true,
     translationFormat: 'xml',
   },
 

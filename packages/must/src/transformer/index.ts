@@ -3,6 +3,7 @@ import * as t from '@babel/types';
 import { I18nConfig, ImportConfig, WrapperGenerator } from '@must/types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { InterpolationHandler, createInterpolationHandler } from '../utils/interpolation';
 
 const traverse = require('@babel/traverse').default;
 const generate = require('@babel/generator').default;
@@ -16,10 +17,33 @@ export interface TransformResult {
 export class CodeTransformer {
   private config: I18nConfig;
   private keyMap: Map<string, string>;  // 文本 -> key 的映射
+  private interpolation: InterpolationHandler;
 
   constructor(config: I18nConfig, keyMap: Map<string, string>) {
     this.config = config;
     this.keyMap = keyMap;
+    this.interpolation = createInterpolationHandler(config.interpolation);
+  }
+
+  /**
+   * 从表达式节点提取变量名
+   */
+  private extractExpressionName(expression: any): string | undefined {
+    // 简单标识符: username
+    if (t.isIdentifier(expression)) {
+      return expression.name;
+    }
+    // 成员表达式: user.name -> 'user_name'
+    if (t.isMemberExpression(expression)) {
+      const object = this.extractExpressionName(expression.object);
+      const property = t.isIdentifier(expression.property)
+        ? expression.property.name
+        : undefined;
+      if (object && property) {
+        return `${object}_${property}`;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -373,12 +397,13 @@ export class CodeTransformer {
 
           if (!hasChineseText) return;
 
-          // 构建完整的模板字符串文本（用于查找 key）
+          // 构建完整的模板字符串文本（用于查找 key，使用可配置的占位符格式）
           let fullText = '';
           quasis.forEach((quasi: any, index: number) => {
             fullText += quasi.value.raw;
             if (index < expressions.length) {
-              fullText += `{{${index}}}`;  // 用占位符替代变量
+              const exprName = this.extractExpressionName(expressions[index]);
+              fullText += this.interpolation.formatPlaceholder(index, exprName);
             }
           });
 
@@ -448,12 +473,13 @@ export class CodeTransformer {
 
           if (!hasChineseText) return;
 
-          // 构建完整的模板字符串文本
+          // 构建完整的模板字符串文本（使用可配置的占位符格式）
           let fullText = '';
           quasis.forEach((quasi: any, index: number) => {
             fullText += quasi.value.raw;
             if (index < expressions.length) {
-              fullText += `{{${index}}}`;
+              const exprName = this.extractExpressionName(expressions[index]);
+              fullText += this.interpolation.formatPlaceholder(index, exprName);
             }
           });
 
@@ -905,7 +931,7 @@ export class CodeTransformer {
 
   /**
    * 尝试合并 JSX 元素的子节点为一个带插值的字符串
-   * 例如: <p>当前等级：{level} 级</p> => "当前等级：{{0}} 级"
+   * 例如: <p>当前等级：{level} 级</p> => "当前等级：{level} 级"
    */
   private tryMergeJSXChildren(nodePath: any, wrapperFunction: string): { mergedText: string; expressions: any[] } | null {
     const children = nodePath.node.children;
@@ -944,7 +970,9 @@ export class CodeTransformer {
           }
         }
 
-        mergedText += `{{${expressionIndex}}}`;
+        // 使用可配置的占位符格式（支持命名参数）
+        const exprName = this.extractExpressionName(expr);
+        mergedText += this.interpolation.formatPlaceholder(expressionIndex, exprName);
         expressions.push(expr);
         expressionIndex++;
       }

@@ -61,7 +61,7 @@ function generatePathPart(filePath: string): string {
 /**
  * 生成唯一的 i18n key
  * 使用英文翻译作为 key 的一部分
- * 格式: {appName}.{filePath}.{translatedKey}[.counter]
+ * 格式: {appName}.{filePath}.{translatedKey}[_{param1}_{param2}][.counter]
  */
 export function generateKey(
   text: string,
@@ -70,7 +70,8 @@ export function generateKey(
   appName?: string,
   keyStyle: 'dot' | 'underscore' = 'dot',
   existingKeys: Set<string> = new Set(),
-  maxKeyLength: number = 50  // 默认最大长度 50
+  maxKeyLength: number = 50,  // 默认最大长度 50
+  paramNames?: string[]  // 参数名列表（用于在 key 中包含参数）
 ): string {
   const separator = keyStyle === 'dot' ? '.' : '_';
   const parts: string[] = [];
@@ -93,11 +94,18 @@ export function generateKey(
   // 计算前缀长度（appName + filePath + 分隔符）
   const prefixLength = parts.join(separator).length + (parts.length > 0 ? 1 : 0);
   
+  // 计算参数后缀长度
+  let paramSuffix = '';
+  if (paramNames && paramNames.length > 0) {
+    paramSuffix = paramNames.map(name => `_{${name}}`).join('');
+  }
+  const paramSuffixLength = paramSuffix.length;
+  
   // 计算翻译部分可用的最大长度
-  const availableLength = Math.max(maxKeyLength - prefixLength, 15);
+  const availableLength = Math.max(maxKeyLength - prefixLength - paramSuffixLength, 15);
   
   // 使用英文翻译生成 key 的最后部分（应用长度限制）
-  const translatedKey = toCamelCase(translatedText, availableLength);
+  let translatedKey = toCamelCase(translatedText, availableLength);
   if (translatedKey) {
     parts.push(translatedKey);
   } else {
@@ -107,6 +115,11 @@ export function generateKey(
   
   // 生成基础 key
   let baseKey = parts.filter(Boolean).join(separator);
+  
+  // 添加参数后缀
+  if (paramSuffix) {
+    baseKey += paramSuffix;
+  }
   
   // 如果 key 已存在，添加计数器
   let finalKey = baseKey;

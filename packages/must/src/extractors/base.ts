@@ -27,9 +27,39 @@ export abstract class BaseExtractor {
 
   /**
    * 生成占位符
+   * @param index 占位符索引
+   * @param name 变量名（用于命名参数模式）
    */
-  protected formatPlaceholder(index: number): string {
-    return this.interpolation.formatPlaceholder(index);
+  protected formatPlaceholder(index: number, name?: string): string {
+    return this.interpolation.formatPlaceholder(index, name);
+  }
+
+  /**
+   * 是否使用命名参数
+   */
+  protected get useNamedParams(): boolean {
+    return this.interpolation.useNamedParams;
+  }
+
+  /**
+   * 从表达式节点提取变量名
+   */
+  protected extractExpressionName(expression: any): string | undefined {
+    // 简单标识符: username
+    if (expression.type === 'Identifier') {
+      return expression.name;
+    }
+    // 成员表达式: user.name -> 'user_name'
+    if (expression.type === 'MemberExpression') {
+      const object = this.extractExpressionName(expression.object);
+      const property = expression.property.type === 'Identifier' 
+        ? expression.property.name 
+        : undefined;
+      if (object && property) {
+        return `${object}_${property}`;
+      }
+    }
+    return undefined;
   }
 
   abstract extract(filePath: string): Promise<ExtractedText[]>;

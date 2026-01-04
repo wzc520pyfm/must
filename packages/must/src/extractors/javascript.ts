@@ -71,23 +71,33 @@ export class JavaScriptExtractor extends BaseExtractor {
             
             // 构建完整的模板字符串，用可配置的占位符格式替代表达式
             let fullTemplate = '';
+            const paramNames: string[] = [];
+            
             quasis.forEach((quasi: any, index: number) => {
               fullTemplate += quasi.value.raw;
               if (index < expressions.length) {
-                fullTemplate += this.formatPlaceholder(index);
+                // 尝试提取变量名（用于命名参数模式）
+                const exprName = this.extractExpressionName(expressions[index]);
+                paramNames.push(exprName || `p${index}`);
+                
+                // 如果使用命名参数，使用变量名；否则使用索引
+                fullTemplate += this.formatPlaceholder(index, exprName);
               }
             });
             
             if (this.isValidText(fullTemplate)) {
-              extractedTexts.push(
-                this.createExtractedText(
-                  fullTemplate,
-                  filePath,
-                  loc?.start.line || 0,
-                  loc?.start.column || 0,
-                  'template'
-                )
+              const extracted = this.createExtractedText(
+                fullTemplate,
+                filePath,
+                loc?.start.line || 0,
+                loc?.start.column || 0,
+                'template'
               );
+              // 将参数名存储在 context 中，供后续生成 key 使用
+              if (paramNames.length > 0) {
+                extracted.context = JSON.stringify({ paramNames });
+              }
+              extractedTexts.push(extracted);
             }
           }
         },
@@ -198,7 +208,9 @@ export class JavaScriptExtractor extends BaseExtractor {
             return null; // 已经被翻译过，不需要再处理
           }
         }
-        result += this.formatPlaceholder(expressionIndex);
+        // 尝试提取变量名（用于命名参数模式）
+        const exprName = this.extractExpressionName(child.expression);
+        result += this.formatPlaceholder(expressionIndex, exprName);
         expressionIndex++;
       }
     }
