@@ -14,9 +14,10 @@
     "version:patch": "pnpm -r --filter './packages/*' exec npm version patch --no-git-tag-version",
     "version:minor": "pnpm -r --filter './packages/*' exec npm version minor --no-git-tag-version",
     "version:major": "pnpm -r --filter './packages/*' exec npm version major --no-git-tag-version",
-    "release:patch": "pnpm version:patch && pnpm changelog --release && pnpm build && pnpm -r publish --access public && git push --follow-tags",
-    "release:minor": "pnpm version:minor && pnpm changelog --release && pnpm build && pnpm -r publish --access public && git push --follow-tags",
-    "release:major": "pnpm version:major && pnpm changelog --release && pnpm build && pnpm -r publish --access public && git push --follow-tags"
+    "release:patch": "pnpm version:patch && pnpm changelog && pnpm build && node scripts/release.js",
+    "release:minor": "pnpm version:minor && pnpm changelog && pnpm build && node scripts/release.js",
+    "release:major": "pnpm version:major && pnpm changelog && pnpm build && node scripts/release.js",
+    "publish:must": "cd packages/must && npm publish --access public"
   },
   "keywords": [
     "i18n",
