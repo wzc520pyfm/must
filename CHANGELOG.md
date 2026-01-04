@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.1.1
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.1.0...v1.1.1)
+
+### 🏡 Chore
+
+- Update release scripts to push tags after publishing and bump version of must package to 1.5.0 ([4e979eb](https://github.com/wzc520pyfm/must/commit/4e979eb))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.1.0
 
 
