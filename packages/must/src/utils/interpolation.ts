@@ -62,7 +62,9 @@ export class InterpolationHandler {
   getTranslationFormatRegex(): RegExp {
     switch (this.config.translationFormat) {
       case 'xml':
-        return /<ph id="(\d+)"\/>/g;
+        // 翻译 API 可能会修改 XML 标签格式，需要匹配多种变体：
+        // <ph id="0"/> <phid="0"/> <ph id=0/> <ph id="0" /> 等
+        return /<ph\s*id\s*=\s*"?(\d+)"?\s*\/>/gi;
       case 'bracket':
         return /\[(\d+)\]/g;
       case 'custom':
