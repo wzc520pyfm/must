@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.9.0...main
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.9.0...main)
+
+### 🚀 Enhancements
+
+- Add --skip-translation option to CLI and configuration for extracting texts without translation ([4daffe0](https://github.com/wzc520pyfm/must/commit/4daffe0))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.8.0...main
 
 [compare changes](https://github.com/wzc520pyfm/must/compare/v1.8.0...main)
