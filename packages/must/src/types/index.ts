@@ -235,6 +235,13 @@ export interface I18nConfig {
   patchDir?: string;  // patch 目录，用于存储增量翻译
   keyStyle?: 'dot' | 'underscore';  // key 风格：点分隔或下划线，默认 'dot'
   keyMaxLength?: number;  // key 最大长度，默认 50
+
+  /**
+   * 跳过翻译，仅提取文案并生成语言文件
+   * 生成的目标语言文件中将使用源语言文案作为占位符
+   * @default false
+   */
+  skipTranslation?: boolean;
   keyConfig?: KeyConfig;  // key 生成配置
   transform?: TransformConfig;  // 代码转换配置
   interpolation?: InterpolationConfig;  // 插值配置
@@ -260,14 +267,14 @@ export type ExtractionWarningSeverity = 'warning' | 'error' | 'info';
 export interface ExtractionWarning {
   /** 警告类型 */
   type:
-    | 'complex-expression'      // 复杂表达式，无法提取变量名
-    | 'nested-template'         // 嵌套模板字符串
-    | 'conditional-expression'  // 条件表达式
-    | 'function-call'           // 函数调用
-    | 'too-many-interpolations' // 过多插值
-    | 'dynamic-text'            // 动态文本（无法静态分析）
-    | 'binary-expression'       // 二元表达式
-    | 'parse-error';            // 解析错误
+  | 'complex-expression'      // 复杂表达式，无法提取变量名
+  | 'nested-template'         // 嵌套模板字符串
+  | 'conditional-expression'  // 条件表达式
+  | 'function-call'           // 函数调用
+  | 'too-many-interpolations' // 过多插值
+  | 'dynamic-text'            // 动态文本（无法静态分析）
+  | 'binary-expression'       // 二元表达式
+  | 'parse-error';            // 解析错误
 
   /** 严重程度 */
   severity: ExtractionWarningSeverity;

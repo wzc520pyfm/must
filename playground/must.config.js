@@ -6,6 +6,7 @@ const config = {
   appName: 'playground',  // 应用名称，用于生成 key
   sourceLanguage: 'zh-CN',  // 源语言改为中文
   targetLanguages: ['en', 'ja'],  // 目标语言为英文和日文
+  // skipTranslation: true, // 跳过翻译，仅提取文案并生成语言文件
   translationProvider: 'baidu',
   // 从环境变量读取 API 配置
   apiKey: process.env.BAIDU_APP_ID,

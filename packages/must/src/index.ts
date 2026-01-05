@@ -100,14 +100,28 @@ export class AutoI18n {
     });
 
     const uniqueTexts = Array.from(textMap.keys());
-    console.log(`📝 Found ${uniqueTexts.length} unique texts to translate`);
+    console.log(`📝 Found ${uniqueTexts.length} unique texts to ${this.config.skipTranslation ? 'extract' : 'translate'}`);
 
-    // Translate to all target languages
-    const translations = await this.translator.translateToMultipleLanguages(
-      uniqueTexts,
-      this.config.sourceLanguage,
-      this.config.targetLanguages
-    );
+    // Translate to all target languages (or skip if skipTranslation is true)
+    let translations: Record<string, { sourceText: string; translatedText: string }[]>;
+    
+    if (this.config.skipTranslation) {
+      // 跳过翻译，使用源文本作为占位符
+      console.log('⏭️  Skipping translation (using source text as placeholder)...');
+      translations = {};
+      for (const targetLang of this.config.targetLanguages) {
+        translations[targetLang] = uniqueTexts.map(text => ({
+          sourceText: text,
+          translatedText: text // 使用源文本作为占位符
+        }));
+      }
+    } else {
+      translations = await this.translator.translateToMultipleLanguages(
+        uniqueTexts,
+        this.config.sourceLanguage,
+        this.config.targetLanguages
+      );
+    }
 
     // Generate keys and organize translations
     const result: Record<string, Record<string, string>> = {};

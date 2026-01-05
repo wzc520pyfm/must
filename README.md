@@ -83,6 +83,7 @@ must [options]
   --key-counter-padding <n>   计数器填充位数
   --key-counter-start <n>     计数器起始值
   --key-prefix-only           仅使用前缀+计数器模式
+  --skip-translation          跳过翻译，使用源文本作为占位符
 ```
 
 ### extract - 仅提取文案
@@ -195,6 +196,9 @@ module.exports = {
   
   /** Key 最大长度 */
   keyMaxLength: 50,
+  
+  /** 跳过翻译，仅提取并生成语言文件（使用源文本作为占位符） */
+  skipTranslation: false,
   
   /** Key 生成详细配置 */
   keyConfig: {

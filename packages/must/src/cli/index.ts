@@ -19,6 +19,7 @@ program
   .option('--key-counter-padding <num>', 'Counter padding (e.g., 5 for 00001)', parseInt)
   .option('--key-counter-start <num>', 'Counter start value', parseInt)
   .option('--key-prefix-only', 'Use prefix + counter only mode')
+  .option('--skip-translation', 'Skip translation API calls, use source text as placeholder')
   .action(async (options) => {
     try {
       const spinner = ora('Initializing...').start();
@@ -34,6 +35,11 @@ program
         if (options.keyCounterPadding !== undefined) config.keyConfig.counterPadding = options.keyCounterPadding;
         if (options.keyCounterStart !== undefined) config.keyConfig.counterStart = options.keyCounterStart;
         if (options.keyPrefixOnly) config.keyConfig.prefixOnly = true;
+      }
+      
+      // 应用跳过翻译选项
+      if (options.skipTranslation) {
+        config.skipTranslation = true;
       }
       
       const autoI18n = new AutoI18n(config);
@@ -90,6 +96,7 @@ program
   .option('-k, --api-key <key>', 'API key for translation service')
   .option('--api-secret <secret>', 'API secret (for Baidu)')
   .option('--region <region>', 'Region (for Azure)')
+  .option('--skip-translation', 'Skip translation API calls, use source text as placeholder')
   .action(async (options) => {
     try {
       const spinner = ora('Initializing translation...').start();
@@ -104,11 +111,12 @@ program
       if (options.apiKey) config.apiKey = options.apiKey;
       if (options.apiSecret) config.apiSecret = options.apiSecret;
       if (options.region) config.region = options.region;
+      if (options.skipTranslation) config.skipTranslation = true;
 
       const autoI18n = new AutoI18n(config);
       await autoI18n.run();
 
-      spinner.succeed('Translation completed successfully!');
+      spinner.succeed(options.skipTranslation ? 'Extraction completed (translation skipped)!' : 'Translation completed successfully!');
     } catch (error) {
       console.error(chalk.red('Translation failed:'), error);
       process.exit(1);
