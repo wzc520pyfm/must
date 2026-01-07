@@ -2,7 +2,7 @@ import { ConfigManager } from './config';
 import { TextExtractor } from './extractors';
 import { TranslationManager } from './translators';
 import { CodeTransformer } from './transformer';
-import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile } from './utils/file';
+import { findFiles, ensureOutputDirectory, writeI18nFile, groupTextsByFile, FindFilesOptions } from './utils/file';
 import { deduplicateTexts, generateKey } from './utils/text';
 import { I18nConfig, ExtractedText, ExtractionWarning } from './types';
 import * as fs from 'fs';
@@ -49,10 +49,22 @@ export class AutoI18n {
     return result.texts;
   }
 
+  /**
+   * 获取文件查找选项
+   */
+  private getFileFindOptions(): FindFilesOptions {
+    return {
+      patterns: this.config.inputPatterns,
+      excludePatterns: this.config.excludePatterns,
+      inputDir: this.config.inputDir,
+      inputFiles: this.config.inputFiles
+    };
+  }
+
   async extractTextsWithWarnings(): Promise<{ texts: ExtractedText[], warnings: ExtractionWarning[] }> {
     console.log('🔍 Extracting texts from files...');
 
-    const files = await findFiles(this.config.inputPatterns, this.config.excludePatterns);
+    const files = await findFiles(this.getFileFindOptions());
     console.log(`📁 Found ${files.length} files to process`);
 
     const allExtractedTexts: ExtractedText[] = [];
@@ -331,7 +343,7 @@ export class AutoI18n {
     const transformer = new CodeTransformer(this.config, keyMap);
 
     // 获取需要转换的文件
-    const files = await findFiles(this.config.inputPatterns, this.config.excludePatterns);
+    const files = await findFiles(this.getFileFindOptions());
     
     let transformedCount = 0;
     for (const file of files) {

@@ -6,30 +6,42 @@ const config = {
   appName: 'playground',  // 应用名称，用于生成 key
   sourceLanguage: 'zh-CN',  // 源语言改为中文
   targetLanguages: ['en', 'ja'],  // 目标语言为英文和日文
-  // skipTranslation: true, // 跳过翻译，仅提取文案并生成语言文件
+  skipTranslation: true, // 跳过翻译，仅提取文案并生成语言文件
   translationProvider: 'baidu',
   // 从环境变量读取 API 配置
   apiKey: process.env.BAIDU_APP_ID,
   apiSecret: process.env.BAIDU_APP_KEY,
+
+  // 输入配置
+  // 方式1: 使用 inputDir 指定输入目录（inputPatterns 将相对于此目录匹配）
+  inputDir: 'src',  // 只扫描 src 目录
+
+  // 方式2: 使用 inputFiles 指定具体的文件或目录（比 inputPatterns 更直接）
+  // inputFiles: ['src/components', 'src/App.tsx'],
+
+  // 输出配置
   outputDir: 'src/i18n',
   patchDir: 'src/i18n/patches',  // patch 目录
+
   keyStyle: 'dot',  // 使用点分隔的 key 风格
   keyMaxLength: 50,  // key 最大长度
+
+  // 文件匹配模式（相对于 inputDir，如果设置了的话）
   inputPatterns: [
-    'src/**/*.{ts,tsx}'
+    '**/*.{ts,tsx}'
   ],
   excludePatterns: [
     'node_modules/**',
     'dist/**',
-    'src/i18n/**'
+    'i18n/**'  // 相对于 inputDir，所以是 i18n/** 而不是 src/i18n/**
   ],
-  
+
   // 插值配置：定义模板字符串中动态表达式的占位符格式
   interpolation: {
     // 占位符前后缀（默认 '{{' 和 '}}'）
     prefix: '{{',
     suffix: '}}',
-    
+
     // 翻译时使用的安全格式，避免翻译 API 破坏占位符
     // 可选值：
     // - 'xml': 使用 <ph id="N"/> 格式（推荐，大多数翻译 API 会保留 XML 标签）
@@ -37,11 +49,11 @@ const config = {
     // - 'custom': 使用自定义 translationPrefix/translationSuffix
     // - null: 不转换（如果翻译 API 不会破坏占位符）
     translationFormat: 'xml',
-    
+
     // 自定义格式的前后缀（当 translationFormat 为 'custom' 时生效）
     // translationPrefix: '__PH',
     // translationSuffix: '__',
-    
+
     // 或者使用函数完全自定义占位符格式
     // format: (index) => `\${${index}}`,  // 生成 ${0}, ${1}, ...
   },
