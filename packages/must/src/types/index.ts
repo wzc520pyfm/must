@@ -200,6 +200,22 @@ export interface I18nConfig {
   apiKey?: string;
   apiSecret?: string;
   region?: string;
+
+  /**
+   * 输入目录（与 outputDir 对应）
+   * 设置后，inputPatterns 将相对于此目录进行匹配
+   * 例如: inputDir: 'src' 表示只扫描 src 目录下的文件
+   */
+  inputDir?: string;
+
+  /**
+   * 输入文件或目录列表
+   * 可以直接指定要扫描的文件或目录，比 inputPatterns 更直接
+   * 例如: ['src/components', 'src/App.tsx']
+   * 如果指定了 inputFiles，inputPatterns 将在这些路径范围内生效
+   */
+  inputFiles?: string[];
+
   outputDir: string;
   inputPatterns: string[];
   excludePatterns: string[];

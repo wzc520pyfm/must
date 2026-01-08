@@ -7,6 +7,8 @@ const DEFAULT_CONFIG: Partial<I18nConfig> = {
   sourceLanguage: 'zh-CN',  // 默认源语言为中文
   targetLanguages: ['en'],  // 默认目标语言为英文
   translationProvider: 'google',
+  inputDir: '',  // 默认为空，表示使用项目根目录
+  inputFiles: [],  // 默认为空，不指定特定文件/目录
   outputDir: 'i18n/strings',
   patchDir: 'i18n/patches',  // 默认 patch 目录
   inputPatterns: [

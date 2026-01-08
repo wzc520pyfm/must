@@ -15,12 +15,14 @@ program
 
 // Default action when no command is specified
 program
+  .argument('[files...]', 'Files or directories to process')
+  .option('-d, --input-dir <dir>', 'Input directory to search files in')
   .option('--key-prefix <prefix>', 'Custom key prefix (e.g., CB_IBG_APPROLL_)')
   .option('--key-counter-padding <num>', 'Counter padding (e.g., 5 for 00001)', parseInt)
   .option('--key-counter-start <num>', 'Counter start value', parseInt)
   .option('--key-prefix-only', 'Use prefix + counter only mode')
   .option('--skip-translation', 'Skip translation API calls, use source text as placeholder')
-  .action(async (options) => {
+  .action(async (files, options) => {
     try {
       const spinner = ora('Initializing...').start();
       
@@ -42,6 +44,16 @@ program
         config.skipTranslation = true;
       }
       
+      // 应用输入目录选项
+      if (options.inputDir) {
+        config.inputDir = options.inputDir;
+      }
+      
+      // 如果命令行直接传入了文件/目录参数
+      if (files && files.length > 0) {
+        config.inputFiles = files;
+      }
+      
       const autoI18n = new AutoI18n(config);
       await autoI18n.run();
       
@@ -54,13 +66,14 @@ program
 
 // Extract command
 program
-  .command('extract')
-  .description('Extract text strings from project files')
+  .command('extract [files...]')
+  .description('Extract text strings from project files. Optionally specify files or directories to extract from.')
   .option('-c, --config <path>', 'Path to configuration file')
   .option('-o, --output <dir>', 'Output directory for extracted texts', 'i18n/strings')
+  .option('-d, --input-dir <dir>', 'Input directory to search files in')
   .option('-p, --patterns <patterns...>', 'File patterns to include')
   .option('-e, --exclude <patterns...>', 'File patterns to exclude')
-  .action(async (options) => {
+  .action(async (files, options) => {
     try {
       const spinner = ora('Initializing...').start();
 
@@ -69,8 +82,14 @@ program
 
       // Override config with CLI options
       if (options.output) config.outputDir = options.output;
+      if (options.inputDir) config.inputDir = options.inputDir;
       if (options.patterns) config.inputPatterns = options.patterns;
       if (options.exclude) config.excludePatterns = options.exclude;
+      
+      // 如果命令行直接传入了文件/目录参数
+      if (files && files.length > 0) {
+        config.inputFiles = files;
+      }
 
       const autoI18n = new AutoI18n(config);
       spinner.text = 'Extracting texts...';
@@ -87,17 +106,18 @@ program
 
 // Translate command
 program
-  .command('translate')
-  .description('Extract and translate text strings')
+  .command('translate [files...]')
+  .description('Extract and translate text strings. Optionally specify files or directories to process.')
   .option('-c, --config <path>', 'Path to configuration file')
   .option('-s, --source <lang>', 'Source language code', 'en')
   .option('-t, --target <languages...>', 'Target language codes', ['zh-CN'])
+  .option('-d, --input-dir <dir>', 'Input directory to search files in')
   .option('-p, --provider <provider>', 'Translation provider', 'google')
   .option('-k, --api-key <key>', 'API key for translation service')
   .option('--api-secret <secret>', 'API secret (for Baidu)')
   .option('--region <region>', 'Region (for Azure)')
   .option('--skip-translation', 'Skip translation API calls, use source text as placeholder')
-  .action(async (options) => {
+  .action(async (files, options) => {
     try {
       const spinner = ora('Initializing translation...').start();
 
@@ -108,10 +128,16 @@ program
       config.sourceLanguage = options.source;
       config.targetLanguages = options.target;
       config.translationProvider = options.provider as any;
+      if (options.inputDir) config.inputDir = options.inputDir;
       if (options.apiKey) config.apiKey = options.apiKey;
       if (options.apiSecret) config.apiSecret = options.apiSecret;
       if (options.region) config.region = options.region;
       if (options.skipTranslation) config.skipTranslation = true;
+      
+      // 如果命令行直接传入了文件/目录参数
+      if (files && files.length > 0) {
+        config.inputFiles = files;
+      }
 
       const autoI18n = new AutoI18n(config);
       await autoI18n.run();

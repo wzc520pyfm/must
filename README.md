@@ -44,9 +44,12 @@ module.exports = {
   translationProvider: 'baidu',
   apiKey: process.env.BAIDU_APP_ID,
   apiSecret: process.env.BAIDU_APP_KEY,
+  
+  // 输入输出配置
+  inputDir: 'src',                           // 指定输入目录
   outputDir: 'src/i18n',
-  inputPatterns: ['src/**/*.{ts,tsx}'],
-  excludePatterns: ['node_modules/**', 'src/i18n/**'],
+  inputPatterns: ['**/*.{ts,tsx}'],          // 相对于 inputDir
+  excludePatterns: ['node_modules/**', 'i18n/**'],
 };
 ```
 
@@ -76,9 +79,13 @@ src/i18n/
 ### 默认命令（提取 + 翻译 + 转换）
 
 ```bash
-must [options]
+must [files...] [options]
+
+参数：
+  files                       要处理的文件或目录（可选）
 
 选项：
+  -d, --input-dir <dir>       输入目录
   --key-prefix <prefix>       自定义 key 前缀
   --key-counter-padding <n>   计数器填充位数
   --key-counter-start <n>     计数器起始值
@@ -86,30 +93,74 @@ must [options]
   --skip-translation          跳过翻译，使用源文本作为占位符
 ```
 
+**示例：**
+
+```bash
+# 处理指定目录
+must src/components
+
+# 处理指定文件
+must src/App.tsx src/utils/index.ts
+
+# 使用 -d 指定输入目录
+must -d src --skip-translation
+```
+
 ### extract - 仅提取文案
 
 ```bash
-must extract [options]
+must extract [files...] [options]
+
+参数：
+  files                       要提取的文件或目录（可选）
 
 选项：
   -c, --config <path>         配置文件路径
   -o, --output <dir>          输出目录
+  -d, --input-dir <dir>       输入目录
   -p, --patterns <patterns>   包含的文件模式
   -e, --exclude <patterns>    排除的文件模式
+```
+
+**示例：**
+
+```bash
+# 提取指定目录
+must extract src/components
+
+# 提取指定文件
+must extract src/App.tsx
+
+# 指定输入目录和输出目录
+must extract -d src -o dist/i18n
 ```
 
 ### translate - 提取并翻译
 
 ```bash
-must translate [options]
+must translate [files...] [options]
+
+参数：
+  files                       要处理的文件或目录（可选）
 
 选项：
   -c, --config <path>         配置文件路径
   -s, --source <lang>         源语言
   -t, --target <langs>        目标语言
+  -d, --input-dir <dir>       输入目录
   -p, --provider <provider>   翻译服务商
   -k, --api-key <key>         API Key
   --api-secret <secret>       API Secret
+```
+
+**示例：**
+
+```bash
+# 翻译指定目录
+must translate src/components
+
+# 指定输入目录
+must translate -d src -s zh-CN -t en ja
 ```
 
 ### init - 初始化配置
@@ -170,23 +221,36 @@ module.exports = {
   
   // ==================== 文件配置 ====================
   
+  /**
+   * 输入目录（与 outputDir 对应）
+   * 设置后，inputPatterns 将相对于此目录进行匹配
+   */
+  inputDir: 'src',
+  
+  /**
+   * 输入文件或目录列表
+   * 可以直接指定要扫描的文件或目录，比 inputPatterns 更直接
+   * 如果指定了 inputFiles，inputPatterns 将在这些路径范围内生效
+   */
+  inputFiles: ['src/components', 'src/App.tsx'],
+  
   /** 输出目录 */
   outputDir: 'src/i18n',
   
   /** 增量翻译目录 */
   patchDir: 'src/i18n/patches',
   
-  /** 包含的文件模式 */
+  /** 包含的文件模式（相对于 inputDir，如果设置了的话） */
   inputPatterns: [
-    'src/**/*.{ts,tsx,js,jsx}',
-    'src/**/*.vue'
+    '**/*.{ts,tsx,js,jsx}',
+    '**/*.vue'
   ],
   
-  /** 排除的文件模式 */
+  /** 排除的文件模式（相对于 inputDir） */
   excludePatterns: [
     'node_modules/**',
     'dist/**',
-    'src/i18n/**'
+    'i18n/**'
   ],
   
   // ==================== Key 生成配置 ====================
@@ -216,6 +280,89 @@ module.exports = {
   transform: {
     // 参见下方 "代码转换配置" 章节
   }
+};
+```
+
+---
+
+## 📂 输入目录配置
+
+控制要扫描提取文案的文件范围，支持三种配置方式。
+
+### 方式 1：使用 inputDir
+
+指定输入目录后，`inputPatterns` 将相对于此目录进行匹配：
+
+```javascript
+module.exports = {
+  inputDir: 'src',                    // 只扫描 src 目录
+  inputPatterns: ['**/*.{ts,tsx}'],   // 相对于 src 目录匹配
+  excludePatterns: ['i18n/**'],       // 相对于 src 目录排除
+  outputDir: 'src/i18n',
+};
+```
+
+### 方式 2：使用 inputFiles
+
+直接指定要扫描的文件或目录列表：
+
+```javascript
+module.exports = {
+  // 指定具体的文件或目录
+  inputFiles: [
+    'src/components',      // 扫描整个 components 目录
+    'src/App.tsx',         // 扫描单个文件
+    'src/pages/Home.tsx',
+  ],
+  inputPatterns: ['**/*.{ts,tsx}'],  // 在指定路径范围内匹配
+  outputDir: 'src/i18n',
+};
+```
+
+### 方式 3：CLI 参数
+
+命令行可以直接传入文件或目录：
+
+```bash
+# 提取指定目录
+must extract src/components
+
+# 提取指定文件
+must extract src/App.tsx src/utils/index.ts
+
+# 使用 -d 指定输入目录
+must -d src
+
+# 组合使用
+must translate src/components -d src
+```
+
+### 优先级说明
+
+1. **CLI 文件参数** (`must extract src/App.tsx`) → 最高优先级
+2. **inputFiles 配置** → 次优先级
+3. **inputDir 配置** → 作为搜索根目录
+4. **inputPatterns** → 在相应目录中匹配文件
+
+### 配置示例
+
+```javascript
+// must.config.js
+module.exports = {
+  appName: 'myapp',
+  sourceLanguage: 'zh-CN',
+  targetLanguages: ['en'],
+  translationProvider: 'baidu',
+  
+  // 方式 1: 使用 inputDir
+  inputDir: 'src',
+  
+  // 方式 2: 或者使用 inputFiles 指定具体路径
+  // inputFiles: ['src/components', 'src/App.tsx'],
+  
+  outputDir: 'src/i18n',
+  inputPatterns: ['**/*.{ts,tsx}'],
+  excludePatterns: ['i18n/**', '**/*.test.*'],
 };
 ```
 
