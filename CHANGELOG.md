@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.9.2...main
+
+[compare changes](https://github.com/wzc520pyfm/must/compare/v1.9.2...main)
+
+### 🚀 Enhancements
+
+- Support specification of input directories and files ([#1](https://github.com/wzc520pyfm/must/pull/1))
+
+### ❤️ Contributors
+
+- Wzc520pyfm ([@wzc520pyfm](https://github.com/wzc520pyfm))
+
 ## v1.9.1...v1.9.1
 
 [compare changes](https://github.com/wzc520pyfm/must/compare/v1.9.1...v1.9.1)
