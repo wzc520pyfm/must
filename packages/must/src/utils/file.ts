@@ -14,11 +14,27 @@ export interface FindFilesOptions {
 }
 
 /**
+ * 规范化路径：处理绝对路径、相对路径、以及拖入终端产生的带转义的路径
+ */
+function normalizePath(inputPath: string, cwd: string): string {
+  // 去除路径两端的空白和引号（拖入终端可能带引号）
+  let normalized = inputPath.trim().replace(/^["']|["']$/g, '');
+
+  // 处理转义的空格（如 /path/to/my\ folder）
+  normalized = normalized.replace(/\\ /g, ' ');
+
+  // 如果是绝对路径直接返回，否则相对于 cwd 解析
+  return isAbsolute(normalized) ? normalized : resolve(cwd, normalized);
+}
+
+/**
  * 查找文件
  * 支持三种模式：
  * 1. 只使用 patterns：在当前目录下匹配
  * 2. patterns + inputDir：在指定目录下匹配
  * 3. patterns + inputFiles：只在指定的文件/目录中匹配
+ * 
+ * 支持绝对路径和相对路径，可以直接将文件夹拖入终端使用
  */
 export async function findFiles(
   patternsOrOptions: string[] | FindFilesOptions,
@@ -42,15 +58,15 @@ export async function findFiles(
   // 如果指定了 inputFiles，优先处理
   if (inputFiles && inputFiles.length > 0) {
     for (const inputPath of inputFiles) {
-      const absolutePath = isAbsolute(inputPath) ? inputPath : resolve(cwd, inputPath);
-      
+      const absolutePath = normalizePath(inputPath, cwd);
+
       if (!existsSync(absolutePath)) {
         console.warn(`⚠️  Path not found: ${inputPath}`);
         continue;
       }
 
       const stat = statSync(absolutePath);
-      
+
       if (stat.isFile()) {
         // 如果是文件，检查是否匹配 patterns
         const matchesPattern = patterns.some(pattern => {
@@ -68,7 +84,7 @@ export async function findFiles(
           }
           return true; // 如果不是扩展名模式，默认匹配
         });
-        
+
         if (matchesPattern) {
           allFiles.push(absolutePath);
         }
@@ -87,7 +103,13 @@ export async function findFiles(
     }
   } else {
     // 使用 inputDir 或当前目录
-    const searchDir = inputDir ? resolve(cwd, inputDir) : cwd;
+    // inputDir 也支持绝对路径（如拖入终端的路径）
+    const searchDir = inputDir ? normalizePath(inputDir, cwd) : cwd;
+
+    if (inputDir && !existsSync(searchDir)) {
+      console.warn(`⚠️  Input directory not found: ${inputDir}`);
+      return [];
+    }
 
     for (const pattern of patterns) {
       const files = await glob(pattern, {
